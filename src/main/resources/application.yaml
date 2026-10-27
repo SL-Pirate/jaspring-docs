@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: jaspring-docs
+  threads:
+    virtual:
+      enabled: true
+
+jaspring:
+  live:
+    transport: websocket
