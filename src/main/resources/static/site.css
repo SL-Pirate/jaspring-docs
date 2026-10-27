@@ -303,6 +303,7 @@ kbd {
 .hero {
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
 }
 .hero-topline {
   display: flex;

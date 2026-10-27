@@ -56,10 +56,10 @@ class JaspringDocsApplicationTests {
             final var json = JsonMapper.builder().build().readTree(update.body());
             assertEquals("patch", json.at("/messages/0/t").asString());
             final var patch = json.at("/messages/0/patches/0/html").asString();
-            assertTrue(Pattern.compile("class=\"counter-value\"[^>]*>1</div>").matcher(patch).find(), patch);
+            assertTrue(Pattern.compile("class=\"counter-value\"[^>]*>\\s*1\\s*</div>").matcher(patch).find(), patch);
             assertTrue(patch.contains(">2</span>"), patch);
             assertEquals(410, stranger.send(event, HttpResponse.BodyHandlers.ofString()).statusCode());
-            assertTrue(Pattern.compile("class=\"counter-value\"[^>]*>0</div>")
+            assertTrue(Pattern.compile("class=\"counter-value\"[^>]*>\\s*0\\s*</div>")
                     .matcher(get(client, "/").body()).find());
         }
     }
