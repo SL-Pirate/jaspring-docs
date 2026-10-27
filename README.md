@@ -25,12 +25,44 @@ No Node.js installation or frontend build is needed to run or package the applic
 
 ```sh
 ./gradlew test bootJar
-java --enable-native-access=ALL-UNNAMED -jar build/libs/docs-0.0.1-SNAPSHOT.jar
+java --enable-native-access=ALL-UNNAMED -jar build/libs/jaspring-docs.jar
 ```
 
 The integration suite starts an isolated server on a random port. It renders every documentation route,
 checks page metadata and missing routes, exercises the live counter through the HTTP event transport,
 verifies session isolation, and tests documentation search.
+
+## Containers
+
+The Dockerfile builds and tests the application in one stage, then copies only the application JAR
+into a non-root runtime stage. It uses the official Oracle GraalVM image matching Jaspring's
+GraalJS 25.2.4, with no dependency on the host JDK or Gradle installation.
+See [Oracle's container image documentation](https://docs.oracle.com/en/graalvm/jdk/25i/docs/getting-started/container-images/).
+
+Build and run locally with Podman:
+
+```sh
+podman build -t localhost/jaspring-docs:latest .
+podman run --rm --name jaspring-docs -p 8095:8095 localhost/jaspring-docs:latest
+```
+
+Build and deploy on the server with Docker:
+
+```sh
+docker build -t jaspring-docs:latest .
+docker run -d --name jaspring-docs --restart unless-stopped -p 8095:8095 jaspring-docs:latest
+```
+
+Open http://localhost:8095. To use another host port, change only the left side of the mapping,
+for example `-p 9000:8095`. Stop an existing local `bootRun` preview before binding its port.
+For a registry-based deployment, tag and push the image to your registry, then pull and run that tag on the server.
+
+Spring Boot settings can be supplied as environment variables. `SERVER_PORT` defaults to 8095;
+`JAVA_TOOL_OPTIONS` can supply additional JVM options. `JAVA_IMAGE` is an optional build argument
+for overriding the base image when upgrading the framework and GraalVM together.
+
+If a reverse proxy terminates TLS, forward WebSocket upgrades for `/_jaspring/ws` as well as normal HTTP
+requests. Live page state belongs to one application process; use session affinity if running multiple replicas.
 
 ## Content and components
 
