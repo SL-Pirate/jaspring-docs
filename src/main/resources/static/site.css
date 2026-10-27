@@ -1086,6 +1086,34 @@ kbd {
 .install-footer a {
   color: #c1dcaa;
 }
+.ide-section {
+  padding-top: 70px;
+  padding-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 60px;
+  align-items: center;
+}
+.ide-copy h2 {
+  font-size: 35px;
+  line-height: 1.15;
+  letter-spacing: -1.3px;
+  margin-top: 15px;
+}
+.ide-copy > p:not(.eyebrow) {
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 18px;
+  color: var(--muted);
+}
+.ide-section iframe {
+  display: block;
+  border: 0;
+  max-width: 100%;
+}
+.ide-install {
+  margin-top: 23px;
+}
 .experimental-note {
   display: flex;
   align-items: center;
@@ -1781,6 +1809,11 @@ kbd {
   }
 }
 @media (max-width: 760px) {
+  .ide-section {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-top: 45px;
+  }
   .container {
     width: calc(100% - 40px);
   }
