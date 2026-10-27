@@ -1,0 +1,133 @@
+<div
+  class="docs-layout container"
+  [attr.data-page-title]="page.title + ' — Jaspring'"
+>
+  <aside class="docs-sidebar">
+    <div class="docs-sidebar-heading">
+      <span class="eyebrow">DOCUMENTATION</span
+      ><span class="version">0.2.0</span>
+    </div>
+    <nav aria-label="Documentation topics">
+      @for (group of groups; track group) {
+        <div class="sidebar-group">
+          <h2>{{ group }}</h2>
+          @for (item of pagesIn(group); track item.slug) {
+            <a
+              [href]="'/docs/' + item.slug"
+              [class.current]="item.slug === page.slug"
+              [attr.aria-current]="item.slug === page.slug ? 'page' : null"
+              >{{ item.title }}
+              @if (item.slug === page.slug) {
+                <span aria-hidden="true">↗</span>
+              }
+            </a>
+          }
+        </div>
+      }
+    </nav>
+    <a class="sidebar-github" href="https://github.com/SL-Pirate/jaspring"
+      >Explore the source <span aria-hidden="true">↗</span></a
+    >
+  </aside>
+  <main id="main" class="doc-article">
+    <div class="doc-breadcrumb">
+      <a href="/docs/introduction">Docs</a><span aria-hidden="true">/</span
+      ><span>{{ page.group }}</span>
+    </div>
+    <div class="doc-title">
+      <p class="eyebrow">{{ page.group }}</p>
+      <h1>{{ page.title }}</h1>
+      <p class="doc-description">{{ page.description }}</p>
+    </div>
+    <details class="mobile-doc-nav">
+      <summary>Browse documentation</summary>
+      <nav aria-label="Mobile documentation topics">
+        @for (group of groups; track group) {
+          <h2>{{ group }}</h2>
+          @for (item of pagesIn(group); track item.slug) {
+            <a
+              [href]="'/docs/' + item.slug"
+              [attr.aria-current]="item.slug === page.slug ? 'page' : null"
+              >{{ item.title }}</a
+            >
+          }
+        }
+      </nav>
+    </details>
+    @for (section of page.sections; track section.id) {
+      <section class="doc-section" [id]="section.id">
+        <h2>
+          <a [href]="'#' + section.id"
+            >{{ section.title
+            }}<span class="anchor-symbol" aria-hidden="true">#</span></a
+          >
+        </h2>
+        @for (paragraph of section.paragraphs; track $index) {
+          <p>{{ paragraph }}</p>
+        }
+        @if (section.code) {
+          <div class="doc-code-block">
+            <div class="code-block-heading">
+              <span>{{ section.filename }}</span
+              ><button
+                class="copy-button"
+                type="button"
+                data-copy
+                [attr.aria-label]="'Copy ' + section.filename"
+              >
+                Copy <span aria-hidden="true">⧉</span>
+              </button>
+            </div>
+            <pre
+              tabindex="0"
+            ><code [attr.data-language]="section.language">{{ section.code }}</code></pre>
+          </div>
+        }
+        @if (section.note) {
+          <aside class="doc-callout">
+            <span class="callout-icon" aria-hidden="true">i</span>
+            <p>{{ section.note }}</p>
+          </aside>
+        }
+      </section>
+    }
+    <div class="doc-source">
+      <span>Jaspring · release + master guides</span
+      ><a
+        [href]="
+          'https://github.com/SL-Pirate/jaspring/blob/master/' + page.source
+        "
+        >Read the framework source <span aria-hidden="true">↗</span></a
+      >
+    </div>
+    <nav class="doc-pagination" aria-label="Previous and next pages">
+      @if (previous(); as prev) {
+        <a [href]="'/docs/' + prev.slug"
+          ><span>← Previous</span><strong>{{ prev.title }}</strong></a
+        >
+      } @else {
+        <span></span>
+      }
+      @if (next(); as following) {
+        <a class="next-page" [href]="'/docs/' + following.slug"
+          ><span>Next →</span><strong>{{ following.title }}</strong></a
+        >
+      }
+    </nav>
+  </main>
+  <aside class="doc-toc">
+    <span>ON THIS PAGE</span>
+    <nav aria-label="On this page">
+      @for (section of page.sections; track section.id) {
+        <a [href]="'#' + section.id">{{ section.title }}</a>
+      }
+    </nav>
+    <div class="toc-help">
+      <span class="status-dot"></span>
+      <p>Built in the open.</p>
+      <a href="https://github.com/SL-Pirate/jaspring/issues"
+        >Feedback & issues ↗</a
+      >
+    </div>
+  </aside>
+</div>

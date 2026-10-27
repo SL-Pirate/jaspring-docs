@@ -1,0 +1,785 @@
+[
+  {
+    "slug": "introduction",
+    "group": "Start here",
+    "title": "Meet Jaspring",
+    "description": "The reactive meta-framework for Java. Spring Boot foundations, Angular templates, and a different kind of full stack.",
+    "source": "README.md",
+    "sections": [
+      {
+        "id": "a-familiar-new-stack",
+        "title": "A familiar, new stack",
+        "paragraphs": [
+          "Jaspring connects Java, Spring, and Angular’s template language into one application model. Write components, services, pipes, and directives in Java. Describe the interface in HTML. Let signals and server-side change detection keep it live.",
+          "It is a meta-framework: Spring Boot provides the application foundation, dependency injection, and HTTP server; Angular’s real compiler parses the templates; Jaspring connects them with a component model, reactive state, and live HTML updates. The name brings those pieces together: Ja + Spri + ng."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "how-a-page-lives",
+        "title": "How a page lives",
+        "paragraphs": [
+          "A Spring MVC controller returns a JaspringView. The server creates a component tree and renders the first HTML document, so content is available immediately. A small browser runtime then connects that page to the server.",
+          "When you click a bound button, the browser sends an event to the page. Its Java handler runs, signals change, and change detection collects the changed views. Jaspring sends HTML patches back over WebSocket, with HTTP as a fallback. Your application does not need a separate REST endpoint for each UI action."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "what-you-write",
+        "title": "What you write",
+        "paragraphs": [
+          "A component is a Java class with a Jaspring @Component annotation. Its template reads the class’s state and calls its methods. Services use ordinary Spring constructor injection."
+        ],
+        "code": "@Component(selector = \"app-counter\", templateUrl = \"counter.component.html\")\npublic class CounterComponent {\n    public final WritableSignal<Integer> count = Signals.signal(0);\n}",
+        "language": "java",
+        "filename": "CounterComponent.java",
+        "note": ""
+      },
+      {
+        "id": "project-status",
+        "title": "Growing in the open",
+        "paragraphs": [
+          "Jaspring 0.2.0 is experimental and MIT licensed. Server rendering, live events, signals, and change detection are available in the published starter. The current master checkout adds client hooks, browser calls, and Java browser closures compiled to WebAssembly. Static generation and incremental regeneration are future work.",
+          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.2.0 release. Newer browser-interoperability APIs are documented as source-build features."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "This website is itself a Jaspring application. Its live counter, search results, and navigation state run as Java components."
+      }
+    ]
+  },
+  {
+    "slug": "installation",
+    "group": "Start here",
+    "title": "Installation",
+    "description": "One starter brings Jaspring into your Spring Boot application. Your first live page is a few files away.",
+    "source": "README.md",
+    "sections": [
+      {
+        "id": "requirements",
+        "title": "Before you begin",
+        "paragraphs": [
+          "Use Java 25 and Spring Boot 4.1.x. Oracle GraalVM 25.2.4 matches the bundled GraalJS runtime and enables optimized startup compilation. Other Java 25 distributions work with the interpreter and can start more slowly.",
+          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler and styling tools are already bundled in the framework. The optional Java-to-WebAssembly browser feature has additional build requirements, covered in Browser interop."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "gradle",
+        "title": "Add the Gradle dependency",
+        "paragraphs": [
+          "Add Maven Central and the Jaspring starter to an existing Spring Boot application. Add Spring Boot’s WebSocket starter for the default live transport; without it, Jaspring uses HTTP."
+        ],
+        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.2.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "maven",
+        "title": "Using Maven",
+        "paragraphs": [
+          "Use the same starter coordinates in your Spring Boot Maven project. Configure native access for the Java process that starts the application."
+        ],
+        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.2.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
+        "language": "html",
+        "filename": "pom.xml",
+        "note": ""
+      },
+      {
+        "id": "create-a-component",
+        "title": "Create a component",
+        "paragraphs": [
+          "Place the component under your @SpringBootApplication package so Jaspring can discover it. Here the package is com.example.components. These imports belong to Jaspring, including @Component."
+        ],
+        "code": "package com.example.components;\n\nimport dev.isira.jaspring.component.Component;\nimport dev.isira.jaspring.signals.Signals;\nimport dev.isira.jaspring.signals.WritableSignal;\n\n@Component(selector = \"app-counter\", templateUrl = \"counter.component.html\")\npublic class CounterComponent {\n    public final WritableSignal<Integer> count = Signals.signal(0);\n}",
+        "language": "java",
+        "filename": "src/main/java/com/example/components/CounterComponent.java",
+        "note": ""
+      },
+      {
+        "id": "add-the-template",
+        "title": "Give it a template",
+        "paragraphs": [
+          "Resources follow the component’s package. A relative templateUrl is resolved next to the class on the classpath."
+        ],
+        "code": "<h1>Hello, Jaspring.</h1>\n<button (click)=\"count.set(count() + 1)\">Increment</button>\n<p>Count: {{ count() }}</p>",
+        "language": "html",
+        "filename": "src/main/resources/com/example/components/counter.component.html",
+        "note": ""
+      },
+      {
+        "id": "route-the-page",
+        "title": "Return it from a controller",
+        "paragraphs": [
+          "JaspringView is a Spring MVC view. Return one from a controller, then start your app with ./gradlew bootRun and visit http://localhost:8080/."
+        ],
+        "code": "package com.example.controllers;\n\nimport com.example.components.CounterComponent;\nimport dev.isira.jaspring.boot.JaspringView;\nimport org.springframework.stereotype.Controller;\nimport org.springframework.web.bind.annotation.GetMapping;\n\n@Controller\npublic class HomeController {\n    @GetMapping(\"/\")\n    public JaspringView home() {\n        return JaspringView.of(CounterComponent.class);\n    }\n}",
+        "language": "java",
+        "filename": "HomeController.java",
+        "note": "The starter supplies a default layout. To customize the document head, add src/main/resources/jaspring/index.html containing <app-counter></app-counter>."
+      }
+    ]
+  },
+  {
+    "slug": "components",
+    "group": "Core concepts",
+    "title": "Components",
+    "description": "Java classes with an interface. Compose them into a tree, pass inputs, and let Spring provide the dependencies.",
+    "source": "jaspring-core/src/main/java/dev/isira/jaspring/component/Component.java",
+    "sections": [
+      {
+        "id": "define-a-component",
+        "title": "Define a component",
+        "paragraphs": [
+          "Use dev.isira.jaspring.component.Component to register a selector, template, and optional stylesheet. Jaspring creates component instances per live page through Spring’s bean factory. They are not shared singleton UI objects."
+        ],
+        "code": "import dev.isira.jaspring.component.Component;\nimport dev.isira.jaspring.component.Input;\n\n@Component(selector = \"app-greeting\",\n           templateUrl = \"greeting.component.html\",\n           styleUrl = \"greeting.component.css\")\npublic class GreetingComponent {\n    @Input public String name = \"world\";\n}",
+        "language": "java",
+        "filename": "GreetingComponent.java",
+        "note": ""
+      },
+      {
+        "id": "inputs-and-composition",
+        "title": "Inputs and composition",
+        "paragraphs": [
+          "A parent uses a child’s selector as an HTML element. Bind a property to pass an input. Components, pipes, and directives discovered by the application are currently available globally; Angular’s standalone imports lists are not enforced."
+        ],
+        "code": "<section>\n  <app-greeting [name]=\"displayName()\"></app-greeting>\n</section>\n\n<!-- Inside greeting.component.html -->\n<h2>Hello, {{ name }}.</h2>\n<ng-content></ng-content>",
+        "language": "html",
+        "filename": "parent.component.html",
+        "note": ""
+      },
+      {
+        "id": "outputs",
+        "title": "Send values to the parent",
+        "paragraphs": [
+          "Create an OutputEmitter with Signals.output() and annotate it with @Output. Emitting a value invokes the parent’s bound handler during the current page turn."
+        ],
+        "code": "import dev.isira.jaspring.component.Output;\nimport dev.isira.jaspring.signals.OutputEmitter;\nimport dev.isira.jaspring.signals.Signals;\n\n@Output public final OutputEmitter<String> saved = Signals.output();\n\npublic void save() {\n    saved.emit(\"Saved\");\n}\n\n// Parent template:\n// <app-editor (saved)=\"onSaved($event)\"></app-editor>",
+        "language": "java",
+        "filename": "EditorComponent.java · excerpt",
+        "note": ""
+      },
+      {
+        "id": "lifecycle",
+        "title": "Work with the lifecycle",
+        "paragraphs": [
+          "Implement lifecycle interfaces from dev.isira.jaspring.cd.lifecycle, such as OnInit, OnChanges, AfterViewInit, and OnDestroy. Their methods use familiar names like ngOnInit() and ngOnDestroy().",
+          "Use initialization to load component data and destruction to release owned resources. Constructor injection works for services. When work should complete after the first response, use the page’s Zone.fork API so the continuation runs inside a valid turn."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Sibling hook phases are not batched exactly like Angular. Each child runs its pre-render hooks and renders before the next sibling. Within a component, the hook order follows Angular."
+      }
+    ]
+  },
+  {
+    "slug": "templates",
+    "group": "Core concepts",
+    "title": "Templates",
+    "description": "Angular’s template language, interpreted against your Java components. The real compiler handles the syntax.",
+    "source": "docs/templates.md",
+    "sections": [
+      {
+        "id": "bindings",
+        "title": "Read state and handle events",
+        "paragraphs": [
+          "Interpolation escapes text. Property bindings reflect values into the corresponding HTML attributes. Event bindings call Java methods or update signals. Read a signal with count() in the template, corresponding to count.get() in Java."
+        ],
+        "code": "<h1>{{ title }}</h1>\n<button [disabled]=\"saving()\" (click)=\"save()\">Save</button>\n<input [(ngModel)]=\"name\" aria-label=\"Your name\">\n<p>Hello, {{ name() }}</p>\n<div [class.highlighted]=\"count() > 5\">{{ count() }}</div>",
+        "language": "html",
+        "filename": "bindings.component.html",
+        "note": ""
+      },
+      {
+        "id": "control-flow",
+        "title": "Use native control flow",
+        "paragraphs": [
+          "Use @if, @for, and @switch directly. Track list items by a stable key to preserve child component instances. Loops expose $index, $first, $last, $even, $odd, and $count."
+        ],
+        "code": "@if (users().length > 0) {\n  <ul>\n    @for (user of users(); track user.id) {\n      <li>{{ user.name }}</li>\n    }\n  </ul>\n} @else {\n  <p>No users yet.</p>\n}",
+        "language": "html",
+        "filename": "users.component.html",
+        "note": ""
+      },
+      {
+        "id": "pipes-and-templates",
+        "title": "Transform and reuse",
+        "paragraphs": [
+          "Built-in pipes include case transforms, date, number, percent, currency, json, keyvalue, slice, and async. Custom Java pipes implement PipeTransform and use Jaspring’s @Pipe annotation.",
+          "Structural forms such as *ngIf, *ngFor, ngSwitch, and ngTemplateOutlet are supported too. Use ng-content for projection, and ng-template for a reusable template fragment."
+        ],
+        "code": "<p>{{ title | uppercase }}</p>\n<pre>{{ user | json }}</pre>\n<p>{{ total | currency:'USD' }}</p>",
+        "language": "html",
+        "filename": "formatting.component.html",
+        "note": ""
+      },
+      {
+        "id": "expressions-and-safety",
+        "title": "Understand the boundaries",
+        "paragraphs": [
+          "Expressions follow JavaScript semantics: strict and loose equality are distinct; optional chaining short-circuits; integral arithmetic results normalize to integers. Java methods and typed signals receive coerced argument values.",
+          "Text is escaped. URL bindings use Angular-derived security contexts. innerHTML is sanitized unless given an explicitly trusted SafeHtml. Template references on ordinary elements are server-side ElementRef values, not live browser DOM nodes."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "@defer currently renders a placeholder, or the main content for hydrate triggers. Server-side triggers do not fire. See Compatibility for the full behavioral differences."
+      }
+    ]
+  },
+  {
+    "slug": "signals",
+    "group": "Core concepts",
+    "title": "Signals & state",
+    "description": "Small primitives. Connected state. A reactive graph that follows the values your interface actually reads.",
+    "source": "docs/reactivity.md",
+    "sections": [
+      {
+        "id": "writable-signals",
+        "title": "Start with a value",
+        "paragraphs": [
+          "Signals.signal(initialValue) returns a WritableSignal<T>. Read it with get(), replace it with set(), or derive its next value with update(). Templates read a signal using function-call syntax."
+        ],
+        "code": "public final WritableSignal<Integer> count = Signals.signal(0);\n\npublic void increment() {\n    count.update(value -> value + 1);\n}\n\npublic void reset() {\n    count.set(0);\n}",
+        "language": "java",
+        "filename": "CounterComponent.java · excerpt",
+        "note": ""
+      },
+      {
+        "id": "computed",
+        "title": "Let derived state follow",
+        "paragraphs": [
+          "Signals.computed(supplier) produces a read-only Signal<T>. It tracks the signals read during the calculation and recomputes lazily when needed. Dependencies are rebuilt on each run, so conditional reads naturally change what it observes."
+        ],
+        "code": "public final WritableSignal<Integer> count = Signals.signal(0);\npublic final Signal<Integer> doubled =\n        Signals.computed(() -> count.get() * 2);",
+        "language": "java",
+        "filename": "Derived state",
+        "note": ""
+      },
+      {
+        "id": "effects-and-linked-state",
+        "title": "Effects and linked state",
+        "paragraphs": [
+          "Signals.effect runs side effects through a scheduler. Effects created in component constructors or lifecycle hooks belong to the page and run before views during the next tick. A cleanup registrar can release resources between runs or at destruction.",
+          "Signals.linkedSignal derives a writable value from another signal. Signals.untracked reads without adding dependencies. Input, model, and output primitives are available through Signals.input(), inputRequired(), model(), and output()."
+        ],
+        "code": "public CounterComponent() {\n    Signals.effect(() -> {\n        System.out.println(\"Count is \" + count.get());\n    });\n}",
+        "language": "java",
+        "filename": "An effect inside a component",
+        "note": ""
+      },
+      {
+        "id": "ownership-and-equality",
+        "title": "Respect page ownership",
+        "paragraphs": [
+          "Signals created in a page turn remember that page. Write them from event handlers, lifecycle work, or Zone-managed continuations. A write from an unrelated thread throws SignalWriteOutsideTurnException.",
+          "Default equality is Java’s Objects.equals, which works naturally with records and value collections. Angular uses identity equality. Pass Equality.identity() when that behavior is needed. Do not write signals from a computed calculation."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Signals created in singleton services outside a page turn are shared and unguarded. Keep visitor-specific state in components or page-scoped services."
+      }
+    ]
+  },
+  {
+    "slug": "events",
+    "group": "Core concepts",
+    "title": "Events & forms",
+    "description": "A browser interaction becomes a Java turn. Bind directly to methods and keep form values in sync.",
+    "source": "docs/events.md",
+    "sections": [
+      {
+        "id": "event-bindings",
+        "title": "Bind an event",
+        "paragraphs": [
+          "Use Angular’s event binding syntax. The browser serializes the event, the server evaluates its expression, and change detection sends back any changed views. The $event value exposes serialized fields such as target.value and custom-event detail."
+        ],
+        "code": "<button (click)=\"save()\">Save</button>\n<input (keyup.enter)=\"search($event.target.value)\">\n<canvas data-jsp-hook=\"chart\"\n        (point-picked)=\"select($event.detail.index)\"></canvas>",
+        "language": "html",
+        "filename": "Events in a template",
+        "note": ""
+      },
+      {
+        "id": "two-way-bindings",
+        "title": "Keep a form in sync",
+        "paragraphs": [
+          "Two-way ngModel works with plain writable fields and WritableSignal values. Use a submit handler for form actions; the browser runtime prevents the default submit navigation. Validate external values in Java before using them."
+        ],
+        "code": "<form (submit)=\"save()\">\n  <label for=\"name\">Your name</label>\n  <input id=\"name\" name=\"name\" [(ngModel)]=\"name\" required>\n  <button type=\"submit\" [disabled]=\"saving()\">Save</button>\n</form>",
+        "language": "html",
+        "filename": "profile.component.html",
+        "note": ""
+      },
+      {
+        "id": "browser-defaults",
+        "title": "Control browser defaults",
+        "paragraphs": [
+          "The server cannot cancel a browser action after the network trip. Jaspring decides preventDefault and stopPropagation from the handler when it renders.",
+          "An expression ending in false or calling $event.preventDefault() gets a prevent-default flag. Calling $event.stopPropagation() adds a stop-propagation flag. The browser applies those flags before sending the event."
+        ],
+        "code": "<a href=\"/fallback\" (click)=\"openPanel(); false\">Open panel</a>\n<button (click)=\"$event.stopPropagation(); select()\">Select</button>",
+        "language": "html",
+        "filename": "Default behavior",
+        "note": ""
+      },
+      {
+        "id": "transport",
+        "title": "Choose the transport",
+        "paragraphs": [
+          "WebSocket is the default and uses one connection per page. If it cannot connect, the runtime falls back to HTTP. HTTP posts events and polls while asynchronous work is pending. Transport off renders ordinary HTML without live handlers or the client runtime."
+        ],
+        "code": "jaspring:\n  live:\n    transport: websocket # websocket, http, or off",
+        "language": "yaml",
+        "filename": "application.yaml",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "dependency-injection",
+    "group": "Core concepts",
+    "title": "Services & injection",
+    "description": "Keep your existing Spring habits. Inject services into components and give page state the right lifetime.",
+    "source": "docs/architecture.md",
+    "sections": [
+      {
+        "id": "constructor-injection",
+        "title": "Use ordinary Spring services",
+        "paragraphs": [
+          "Jaspring creates components through Spring’s bean factory, so constructor injection works without another container. Keep business rules and external I/O behind services, then pass the results into component state."
+        ],
+        "code": "@Component(selector = \"app-profile\", templateUrl = \"profile.component.html\")\npublic class ProfileComponent {\n    private final UserDirectory directory;\n\n    public ProfileComponent(UserDirectory directory) {\n        this.directory = directory;\n    }\n}",
+        "language": "java",
+        "filename": "ProfileComponent.java",
+        "note": ""
+      },
+      {
+        "id": "page-scope",
+        "title": "Give state a page lifetime",
+        "paragraphs": [
+          "Spring services are singletons by default. A mutable singleton is shared across visitors. Use @Scope(\"jaspring-page\") for a bean that should be owned by one live page. The scope is available during rendering, event handlers, and tracked continuations."
+        ],
+        "code": "@org.springframework.stereotype.Service\n@org.springframework.context.annotation.Scope(\"jaspring-page\")\npublic class DraftState {\n    private String title = \"Untitled\";\n\n    public String getTitle() { return title; }\n    public void setTitle(String title) { this.title = title; }\n}",
+        "language": "java",
+        "filename": "DraftState.java",
+        "note": ""
+      },
+      {
+        "id": "asynchronous-work",
+        "title": "Return to a page turn",
+        "paragraphs": [
+          "Zone.current().fork(work) performs work outside the page turn on a virtual thread. Its continuation runs as a new turn, under the page lock. That is the safe place to update the component’s page-owned signals."
+        ],
+        "code": "public void load() {\n    Zone.current().fork(directory::findAll)\n            .thenAccept(users::set);\n}",
+        "language": "java",
+        "filename": "Loading in a component",
+        "note": "Use a short jaspring.stability-timeout when you want the initial HTML to respond before slow work finishes. The result then arrives as a patch."
+      }
+    ]
+  },
+  {
+    "slug": "styles",
+    "group": "Core concepts",
+    "title": "Styles & Tailwind",
+    "description": "Scoped component CSS or Tailwind v4. Both are processed on the JVM when your application starts.",
+    "source": "docs/styles.md",
+    "sections": [
+      {
+        "id": "component-styles",
+        "title": "Keep styles close",
+        "paragraphs": [
+          "Set styleUrl on @Component to load CSS relative to the component’s classpath package. Inline styles are also supported. PostCSS transforms component styles once at startup."
+        ],
+        "code": "@Component(selector = \"app-card\",\n           templateUrl = \"card.component.html\",\n           styleUrl = \"card.component.css\")\npublic class CardComponent {}",
+        "language": "java",
+        "filename": "CardComponent.java",
+        "note": ""
+      },
+      {
+        "id": "encapsulation",
+        "title": "Emulated encapsulation",
+        "paragraphs": [
+          "Jaspring adds scope attributes to component elements and rewrites selectors, matching Angular’s emulated style encapsulation. :host targets the component host. :host-context handles ancestor context. Selectors after ::ng-deep remain unscoped.",
+          "The layout emits processed component styles in a head style block. Put global resets, font declarations, and site-wide tokens in a static stylesheet linked from your layout."
+        ],
+        "code": ":host { display: block; }\nh2 { color: #c7fa73; }\n.card { padding: 1.5rem; border: 1px solid currentColor; }",
+        "language": "css",
+        "filename": "card.component.css",
+        "note": ""
+      },
+      {
+        "id": "tailwind",
+        "title": "Enable Tailwind v4",
+        "paragraphs": [
+          "Point jaspring.tailwind.stylesheet at a classpath stylesheet. Tailwind v4 runs in GraalJS at startup, using class candidates found in compiled templates and the layout. No Node-based file scanner is needed."
+        ],
+        "code": "# application.yaml\njaspring:\n  tailwind:\n    stylesheet: classpath:tailwind.css\n\n/* src/main/resources/tailwind.css */\n@import \"tailwindcss\";\n@theme { --color-brand: #c7fa73; }",
+        "language": "text",
+        "filename": "Tailwind configuration",
+        "note": ""
+      },
+      {
+        "id": "apply-and-limits",
+        "title": "Use utilities deliberately",
+        "paragraphs": [
+          "Component styles can use @apply and theme variables. Jaspring compiles them with a reference to your Tailwind stylesheet before scoping them.",
+          "Keep utility class names complete and visible in templates so the candidate scanner can find them. Tailwind @plugin and @config are unavailable because no Node code executes in this pipeline."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "change-detection",
+    "group": "Go further",
+    "title": "Change detection",
+    "description": "Understand the page turn: the boundary that keeps Java state, effects, rendering, and browser patches coherent.",
+    "source": "docs/change-detection.md",
+    "sections": [
+      {
+        "id": "turns",
+        "title": "One page, one turn at a time",
+        "paragraphs": [
+          "A live page owns its component tree, zone, effect scheduler, and page-scoped beans. A turn acquires its lock, binds that context, runs the work, runs change detection, and collects HTML patches.",
+          "Initial rendering, browser events, and forked completions are all turns. Turns from one page never overlap. Different pages can execute concurrently on virtual threads. Rendering sibling subtrees within a page is sequential."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "strategies",
+        "title": "Default and OnPush",
+        "paragraphs": [
+          "In zone mode, every turn ends in a tick. Default views re-render. OnPush views update when an input changes, an event fires inside the view, a signal read by it changes, or markForCheck is called."
+        ],
+        "code": "@Component(selector = \"app-user-card\",\n           templateUrl = \"user-card.component.html\",\n           changeDetection = ChangeDetectionStrategy.ON_PUSH)\npublic class UserCardComponent {\n    @Input public User user;\n}",
+        "language": "java",
+        "filename": "An OnPush component",
+        "note": ""
+      },
+      {
+        "id": "zoneless",
+        "title": "Choose zoneless mode",
+        "paragraphs": [
+          "In zoneless mode, only dirty views re-render. Signal reads connect each template to its dependencies, and writes mark those views dirty. Use ChangeDetectorRef.current() inside a constructor or hook for markForCheck, detectChanges, detach, and reattach."
+        ],
+        "code": "jaspring:\n  change-detection: zoneless\n  stability-timeout: 300ms",
+        "language": "yaml",
+        "filename": "application.yaml",
+        "note": ""
+      },
+      {
+        "id": "effects-and-patches",
+        "title": "From effects to patches",
+        "paragraphs": [
+          "Effects run before views during each tick. A tick repeats while effects or renders dirty more state, with a limit of ten passes. Jaspring does not implement Angular’s development-only expression-changed second pass.",
+          "The server caches each component’s rendered HTML. After a turn, the topmost changed views become patches. The browser morphs those HTML fragments into the live document rather than replacing the entire page."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "browser-interop",
+    "group": "Go further",
+    "title": "Browser interop",
+    "description": "Reach the browser when the browser is the right place to work. Use JavaScript hooks or Java closures compiled to WebAssembly.",
+    "source": "docs/browser.md",
+    "sections": [
+      {
+        "id": "client-hooks",
+        "title": "Mount a client hook",
+        "paragraphs": [
+          "Add data-jsp-hook to an element and register the hook in a page script. mounted, updated, and destroyed follow that element’s lifetime. Use hooks for canvas, layout reads, or existing JavaScript widgets.",
+          "ctx.pushEvent dispatches a bubbling custom event that the template can bind normally. Hook parameters can be supplied through data-jsp-hook-params as JSON."
+        ],
+        "code": "jaspring.hooks.register('chart', {\n  mounted(el, ctx) {\n    el.onclick = () => ctx.pushEvent('point-picked', { index: 2 });\n  },\n  updated(el, ctx) { /* redraw using ctx.params */ },\n  destroyed(el) { /* release client resources */ }\n});",
+        "language": "javascript",
+        "filename": "static/chart.js",
+        "note": "Source-build feature: this chapter describes the current master checkout. The published 0.2.0 starter does not yet expose the hooks, browser calls, or WebAssembly APIs shown here. Use a matching source build of the core, starter, and Gradle plugin."
+      },
+      {
+        "id": "browser-calls",
+        "title": "Ask the browser for a result",
+        "paragraphs": [
+          "Register a page-level JavaScript function with jaspring.calls.register, then call it from Java using Browser.current().call. A dotted target such as chart.size calls a method on a mounted hook in the component’s host.",
+          "The result completes inside a page turn, so its continuation may safely update signals. A missing function, client error, or timeout fails the task."
+        ],
+        "code": "// JavaScript\njaspring.calls.register('viewport', () => ({ width: innerWidth }));\n\n// Java, inside a component handler\nBrowser.current().call(\"viewport\")\n        .thenAccept(value -> status.set(String.valueOf(value)));",
+        "language": "text",
+        "filename": "A browser round trip",
+        "note": ""
+      },
+      {
+        "id": "java-in-the-browser",
+        "title": "Run a Java closure in the browser",
+        "paragraphs": [
+          "Platform.onBrowser takes a Java lambda that receives a BrowserClient. The Gradle plugin compiles these closures into one WebAssembly module using GraalVM Web Image. The result travels back through the same page protocol.",
+          "Browser closures cannot access this, Spring beans, server signals, or secrets. Capture only serializable data. Supported values include primitives, strings, enums, records, and arrays; use records to carry typed collections."
+        ],
+        "code": "Platform.onBrowser(client ->\n        client.localStorage().get(\"theme\").orElse(\"dark\"))\n        .thenAccept(theme::set);",
+        "language": "java",
+        "filename": "Read browser storage",
+        "note": ""
+      },
+      {
+        "id": "webassembly-toolchain",
+        "title": "The optional WebAssembly toolchain",
+        "paragraphs": [
+          "Browser closures require Oracle GraalVM 25.2.x with Web Image, Binaryen wasm-as 119 or later, and the matching Jaspring Gradle plugin. GraalVM Community does not include Web Image.",
+          "The plugin scans closures, builds a dispatcher, and packages the launcher, WebAssembly module, and manifest as application resources. Set -Pjaspring.browser.skip=true to build without the image; invoking a closure then reports that the build is unavailable."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Hooks and browser calls work without WebAssembly. Browser closures add a Java runtime download and require browser support for WebAssembly GC and exception handling."
+      }
+    ]
+  },
+  {
+    "slug": "tooling",
+    "group": "Go further",
+    "title": "Gradle & IDE tooling",
+    "description": "Generate components with a familiar command, and keep Java-backed templates comfortable to work in.",
+    "source": "jaspring-gradle-plugin/README.md",
+    "sections": [
+      {
+        "id": "gradle-plugin",
+        "title": "Apply the Gradle plugin",
+        "paragraphs": [
+          "The Jaspring plugin provides build tooling. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the matching release."
+        ],
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.2.0'",
+        "language": "gradle",
+        "filename": "Plugin configuration",
+        "note": ""
+      },
+      {
+        "id": "generate-component",
+        "title": "Generate a component",
+        "paragraphs": [
+          "The task creates a Java class and package-relative HTML and CSS resources. It refuses to overwrite existing targets. By default, each component gets its own subpackage; --flat omits that final directory."
+        ],
+        "code": "./gradlew generateComponent --name=user-card --package=com.example.components\n\n# Generated files:\n# src/main/java/com/example/components/usercard/UserCardComponent.java\n# src/main/resources/com/example/components/usercard/user-card.component.html\n# src/main/resources/com/example/components/usercard/user-card.component.css",
+        "language": "shell",
+        "filename": "Terminal",
+        "note": ""
+      },
+      {
+        "id": "generator-options",
+        "title": "Shape the output",
+        "paragraphs": [
+          "Options include --prefix, --selector, --inline-template, --inline-style, --display-block, --style=none, and --change-detection=OnPush. Parent paths in a name become Java subpackages. Use a qualified task such as :app:generateComponent in a multi-module application.",
+          "The task creates component files only. It does not generate routes, controllers, tests, TypeScript, Sass, or NgModules. List the available options with ./gradlew help --task generateComponent."
+        ],
+        "code": "./gradlew generateComponent --name=counter              --package=com.example.components --flat              --inline-template --inline-style --change-detection=OnPush",
+        "language": "shell",
+        "filename": "Terminal",
+        "note": ""
+      },
+      {
+        "id": "intellij",
+        "title": "IntelliJ IDEA support",
+        "paragraphs": [
+          "The framework repository includes a standalone IntelliJ plugin under tools/intellij-plugin. It supplies Java-backed template completion, navigation, and refactoring support. Follow that directory’s README for its build and installation instructions."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "architecture",
+    "group": "Go further",
+    "title": "Under the hood",
+    "description": "Three familiar foundations, one live application model. Follow a page from compilation to a browser patch.",
+    "source": "docs/architecture.md",
+    "sections": [
+      {
+        "id": "the-foundations",
+        "title": "A meta-framework, by composition",
+        "paragraphs": [
+          "Spring Boot provides the application, MVC integration, dependency injection, and transports. Angular’s compiler supplies template parsing. GraalJS runs the compiler and PostCSS at startup. Jaspring implements the Java component model, expression evaluation, signals, page turns, and HTML patching.",
+          "This gives you Angular’s template language without running a conventional Angular application in the browser. The browser receives rendered HTML and a small client runtime. Java browser closures optionally add a WebAssembly application module."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "The architecture covers the current master source. Browser calls, client hooks, and Java browser closures are newer than the published 0.2.0 starter used by this website."
+      },
+      {
+        "id": "startup",
+        "title": "At startup",
+        "paragraphs": [
+          "Classpath scanning discovers Jaspring components, pipes, and directives. Angular’s real compiler parses each template in GraalJS. Jaspring converts the result into Java AST records, resolves members, and validates the template.",
+          "PostCSS scopes component CSS; Tailwind runs here too if configured. Invalid templates fail startup with Angular’s compiler messages. The server does not evaluate JavaScript on the request path."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "request-and-event",
+        "title": "At render and event time",
+        "paragraphs": [
+          "A controller returns JaspringView. The runtime creates a live page and renders its component tree in a turn. It waits for tracked work up to the configured stability timeout and wraps the result in the HTML layout.",
+          "The browser sends bound events back to that page. Java runs the handler under the page lock, change detection chooses changed views, and the transport delivers HTML patches. The browser runtime morphs the corresponding DOM."
+        ],
+        "code": "Browser event\n    → page turn + Java handler\n    → signal writes + change detection\n    → changed component HTML\n    → WebSocket or HTTP\n    → browser DOM patch",
+        "language": "text",
+        "filename": "The live loop",
+        "note": ""
+      },
+      {
+        "id": "modules",
+        "title": "The framework modules",
+        "paragraphs": [
+          "jaspring-core owns the component, template, signal, zone, and live-page machinery. jaspring-spring-boot-starter adds auto-configuration, MVC views, layouts, live transports, and browser assets.",
+          "jaspring-gradle-plugin provides component scaffolding and browser-closure builds. jaspring-browser-runtime is the BrowserClient facade compiled into WebAssembly. jaspring-sample shows the pieces working together."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "configuration",
+    "group": "Go further",
+    "title": "Configuration",
+    "description": "A small set of application-level choices for rendering, transports, page lifetime, and styling.",
+    "source": "jaspring-spring-boot-starter/src/main/java/dev/isira/jaspring/boot/JaspringProperties.java",
+    "sections": [
+      {
+        "id": "application-settings",
+        "title": "Configure the runtime",
+        "paragraphs": [
+          "Jaspring uses Spring Boot configuration properties under jaspring. Enable virtual threads for the application. Use dev-mode during development when you want detailed handler errors returned to the browser."
+        ],
+        "code": "spring:\n  threads:\n    virtual:\n      enabled: true\n\njaspring:\n  change-detection: zone\n  live:\n    transport: websocket\n  stability-timeout: 10s\n  page-ttl: 60s\n  max-pages-per-session: 20\n  dev-mode: false",
+        "language": "yaml",
+        "filename": "application.yaml · defaults",
+        "note": ""
+      },
+      {
+        "id": "page-lifetime",
+        "title": "Page lifetime and stability",
+        "paragraphs": [
+          "stability-timeout controls how long the initial render waits for Zone-managed work. Later completions arrive as patches. It defaults to ten seconds. A lower timeout can expose a loading state sooner.",
+          "page-ttl is how long a page survives without a connected client, defaulting to sixty seconds. max-pages-per-session defaults to twenty. Each live page owns server-side state, so choose deployment capacity with that lifetime in mind."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "layout-and-scanning",
+        "title": "Layout and component discovery",
+        "paragraphs": [
+          "The default layout is classpath:/jaspring/index.html. Add that resource to customize the document head, fonts, global CSS, and scripts. Include an empty root-selector element; Jaspring replaces it with rendered component HTML.",
+          "Component discovery defaults to the @SpringBootApplication packages. Set jaspring.base-packages when components live elsewhere."
+        ],
+        "code": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>My Jaspring app</title>\n  <link rel=\"stylesheet\" href=\"/site.css\">\n</head>\n<body><app-root></app-root></body>\n</html>",
+        "language": "html",
+        "filename": "src/main/resources/jaspring/index.html",
+        "note": ""
+      },
+      {
+        "id": "tailwind-setting",
+        "title": "Opt into Tailwind",
+        "paragraphs": [
+          "Set jaspring.tailwind.stylesheet to a classpath CSS resource to enable Tailwind’s startup compilation. Without this property, ordinary global and component styles work without Tailwind."
+        ],
+        "code": "jaspring:\n  tailwind:\n    stylesheet: classpath:tailwind.css",
+        "language": "yaml",
+        "filename": "application.yaml",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "compatibility",
+    "group": "Go further",
+    "title": "Status & compatibility",
+    "description": "Familiar syntax comes with a different execution model. Know the current boundaries before building on them.",
+    "source": "docs/deviations.md",
+    "sections": [
+      {
+        "id": "current-status",
+        "title": "Experimental, and usable for exploration",
+        "paragraphs": [
+          "The published Jaspring 0.2.0 starter implements server-rendered components, live browser events, signals, and zone and zoneless change detection. Client hooks, browser calls, and Java-to-WebAssembly browser closures are implemented in the current master source and require a matching source build. Static generation and incremental regeneration remain future work.",
+          "A live page keeps its component tree and state on the server between events. Interaction depends on a working connection. Evaluate that architecture and the experimental API against your application’s needs."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "angular-differences",
+        "title": "Angular syntax, Java behavior",
+        "paragraphs": [
+          "Templates are parsed by Angular’s compiler, but execution happens against Java objects. Signal and input equality use Objects.equals. Numeric results are Long or Double, then coerced at typed Java boundaries.",
+          "All scanned components, pipes, and directives are currently globally visible. Angular standalone import boundaries are not enforced. References on ordinary elements contain server-side element metadata, not browser DOM nodes."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "rendering-boundaries",
+        "title": "Rendering and lifecycle boundaries",
+        "paragraphs": [
+          "@defer renders placeholders unless hydrate triggers call for the main content. Server triggers do not run. ICU plural categories currently cover English categories. Dates and numbers use JDK locale data rather than Angular’s CLDR data.",
+          "Effects run before views in page ticks. Sibling lifecycle phases are not batched exactly like Angular. There is no development-mode ExpressionChangedAfterItHasBeenChecked second pass and no parallel sibling rendering."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "browser-and-security",
+        "title": "Browser and trust boundaries",
+        "paragraphs": [
+          "Event preventDefault and stopPropagation flags are decided when handlers render. The HTML sanitizer uses an Angular-derived allowlist over a tolerant tokenizer instead of a browser DOM parser.",
+          "Java browser closures run client-side. Captures and results cross the network as JSON; never capture secrets. The optional WebAssembly runtime needs a compatible browser and Oracle GraalVM’s build tooling.",
+          "Report reproducible issues in the framework’s GitHub repository. Include the smallest component, template, configuration, and steps that demonstrate the behavior."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Browser-closure support and its Gradle tasks describe master, not the published 0.2.0 artifacts. Keep the plugin, core, and starter on the same source revision when trying those features."
+      }
+    ]
+  }
+]

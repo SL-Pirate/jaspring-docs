@@ -1,0 +1,335 @@
+<main id="main">
+  <section class="hero container">
+    <div class="hero-topline">
+      <span class="eyebrow"
+        ><span class="status-dot"></span> THE REACTIVE META-FRAMEWORK FOR
+        JAVA</span
+      ><a class="release-pill" href="/docs/introduction#project-status"
+        >EXPERIMENTAL / v0.2.0 <span aria-hidden="true">↗</span></a
+      >
+    </div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1>
+          The web<br />framework<br />Java
+          <span class="hero-outline">always</span><br /><span
+            class="hero-accent"
+            >deserved<span class="hero-period">.</span></span
+          >
+        </h1>
+        <p class="hero-description">
+          Spring Boot underneath. Angular templates up front.<br
+            class="desktop-break"
+          />
+          Reactive Java connecting everything.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="/docs/installation"
+            >Make something live <span aria-hidden="true">↗</span></a
+          ><a class="hero-docs-link" href="/docs/introduction"
+            >Meet Jaspring <span aria-hidden="true">→</span></a
+          >
+        </div>
+      </div>
+      <div
+        class="hero-art"
+        aria-label="Jaspring brings Java, Spring, and Angular templates into one reactive stack"
+      >
+        <div class="orbital-field" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="orbit orbit-three"></div>
+          <div class="orbital-core">
+            <svg viewBox="0 0 80 80" fill="none">
+              <path
+                d="M22 59V31m0 16 27-27M35 59V39l23-22M49 20h9v9"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <span class="orbital-satellite satellite-java"><span>J</span></span
+          ><span class="orbital-satellite satellite-spring"
+            ><svg viewBox="0 0 32 32" fill="none">
+              <path
+                d="M6 24C4 12 16 11 25 6c4 10-1 23-13 20M7 25 24 9M11 19l8 1M15 15l-1-5"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg></span
+          ><span class="orbital-satellite satellite-angular"
+            ><span>A</span></span
+          ><span class="art-cross cross-one">+</span
+          ><span class="art-cross cross-two">+</span
+          ><span class="art-dot dot-one"></span
+          ><span class="art-dot dot-two"></span>
+        </div>
+        <span class="art-coordinate">J / S / A — CONNECTED</span>
+        <div class="art-caption">
+          <span>01 / A NEW ORBIT FOR JAVA</span>
+          <p>Familiar foundations.<br />Unfamiliar possibilities.</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-bottom">
+      <span>JAVA + SPRING + ANGULAR</span>
+      <div class="hero-meta">
+        <span>Open source / MIT</span><span>Server rendered</span
+        ><span>Live by default</span>
+      </div>
+      <a
+        href="#playground"
+        class="scroll-cue"
+        aria-label="Scroll to live playground"
+        >SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a
+      >
+    </div>
+  </section>
+
+  <section
+    id="playground"
+    class="playground container"
+    aria-labelledby="playground-heading"
+  >
+    <div class="section-overline">
+      <span
+        ><span class="tiny-cross">+</span> A LITTLE JAVA. A LIVE
+        INTERFACE.</span
+      ><span class="overline-detail">Real signals. Running right here.</span>
+    </div>
+    <h2 class="sr-only" id="playground-heading">Try Jaspring’s live signals</h2>
+    <div class="playground-window">
+      <div class="code-pane">
+        <div class="editor-toolbar">
+          <div class="window-dots" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <div class="code-tabs" role="tablist" aria-label="Example source">
+            <button
+              id="java-tab"
+              type="button"
+              role="tab"
+              [attr.aria-selected]="tab() === 'java'"
+              aria-controls="example-code"
+              [class.selected]="tab() === 'java'"
+              (click)="tab.set('java')"
+            >
+              CounterComponent.java</button
+            ><button
+              id="html-tab"
+              type="button"
+              role="tab"
+              [attr.aria-selected]="tab() === 'html'"
+              aria-controls="example-code"
+              [class.selected]="tab() === 'html'"
+              (click)="tab.set('html')"
+            >
+              Template.html
+            </button>
+          </div>
+        </div>
+        <div
+          id="example-code"
+          class="example-code"
+          role="tabpanel"
+          [attr.aria-labelledby]="tab() === 'java' ? 'java-tab' : 'html-tab'"
+          tabindex="0"
+        >
+          <div class="line-numbers" aria-hidden="true">
+            01<br />02<br />03<br />04<br />05<br />06<br />07<br />08<br />09<br />10
+          </div>
+          <pre><code [attr.data-language]="tab()">{{ tab() === 'java' ? javaExample : htmlExample }}</code></pre>
+        </div>
+        <div class="editor-status">
+          <span><i class="status-dot"></i> Java on the server</span
+          ><a href="/docs/components"
+            >Meet your first component <span aria-hidden="true">↗</span></a
+          >
+        </div>
+      </div>
+      <div class="preview-pane">
+        <div class="preview-label">
+          <span class="status-dot"></span>LIVE PREVIEW<span
+            class="preview-protocol"
+            >JASPRING SIGNALS</span
+          >
+        </div>
+        <div class="counter-demo">
+          <span class="counter-label"
+            >A little state. A lot of possibility.</span
+          >
+          <div class="counter-value" aria-live="polite" aria-atomic="true">
+            {{ count() }}
+          </div>
+          <span class="computed-value"
+            >doubled <span>{{ doubled() }}</span></span
+          >
+          <div class="counter-actions">
+            <button
+              id="counter-increment"
+              type="button"
+              class="button"
+              (click)="count.set(count() + 1)"
+            >
+              Increment <span aria-hidden="true">+</span></button
+            ><button
+              type="button"
+              class="reset-button"
+              (click)="count.set(0)"
+              aria-label="Reset counter"
+            >
+              ↺
+            </button>
+          </div>
+        </div>
+        <div class="preview-caption">
+          Click. Java runs. The view updates.<br /><span
+            >No REST endpoint in between.</span
+          >
+        </div>
+      </div>
+    </div>
+    <div class="playground-footnote">
+      <span class="mini-branch" aria-hidden="true">↳</span> Yes, this website is
+      built with Jaspring. <a href="/docs/architecture">See how it works →</a>
+    </div>
+  </section>
+
+  <section
+    class="familiar-section container"
+    aria-labelledby="familiar-heading"
+  >
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">FAMILIAR PIECES. A FRESH CONNECTION.</p>
+        <h2 id="familiar-heading">
+          Everything you know.<br />A new way to put it together.
+        </h2>
+      </div>
+      <p>
+        Keep the tools you love. Bring your UI closer<br
+          class="desktop-break"
+        />
+        to the code that powers it.
+      </p>
+    </div>
+    <div class="feature-grid">
+      <article>
+        <div class="feature-symbol java-symbol" aria-hidden="true">
+          &#123; &#125;
+        </div>
+        <h3>Java, all the way down.</h3>
+        <p>
+          Components, services, and reactive state in Java. Constructor
+          injection and Spring’s ecosystem are already home.
+        </p>
+        <a href="/docs/components"
+          >Write a component <span aria-hidden="true">↗</span></a
+        >
+      </article>
+      <article>
+        <div class="feature-symbol template-symbol" aria-hidden="true">
+          &lt;/&gt;
+        </div>
+        <h3>Templates you already know.</h3>
+        <p>
+          Angular’s real template compiler. Familiar bindings, control flow,
+          pipes, and scoped styles, with Java behind them.
+        </p>
+        <a href="/docs/templates"
+          >Explore templates <span aria-hidden="true">↗</span></a
+        >
+      </article>
+      <article>
+        <div class="feature-symbol signal-symbol" aria-hidden="true">ϟ</div>
+        <h3>Reactivity, built right in.</h3>
+        <p>
+          Signals track dependencies. Computed values follow along. A small
+          browser runtime keeps your interface in sync.
+        </p>
+        <a href="/docs/signals"
+          >Follow the signal <span aria-hidden="true">↗</span></a
+        >
+      </article>
+    </div>
+  </section>
+
+  <section class="flow-section container" aria-labelledby="flow-heading">
+    <div class="flow-copy">
+      <p class="eyebrow">SERVER ROOTS. LIVE BRANCHES.</p>
+      <h2 id="flow-heading">
+        The server does the work.<br />The interface stays alive.
+      </h2>
+      <p>
+        A page renders as HTML. A browser event becomes a Java method call.
+        Jaspring sends back the changed views over WebSocket, with HTTP as a
+        fallback.
+      </p>
+      <a class="text-link" href="/docs/architecture"
+        >Under the hood <span aria-hidden="true">↗</span></a
+      >
+    </div>
+    <div
+      class="flow-diagram"
+      aria-label="Browser event to Java component to HTML patch and back to the browser"
+    >
+      <div class="flow-endpoint">
+        <span class="diagram-icon" aria-hidden="true">▱</span
+        ><strong>Your browser</strong><span>HTML + a small runtime</span>
+      </div>
+      <div class="flow-connection">
+        <div><span>DOM event</span><i aria-hidden="true">⟶</i></div>
+        <div><i aria-hidden="true">⟵</i><span>HTML patch</span></div>
+      </div>
+      <div class="flow-endpoint server-endpoint">
+        <img src="/favicon.svg" alt="" width="35" height="35" /><strong
+          >Your Java</strong
+        ><span>Spring + signals</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="start-section container" aria-labelledby="start-heading">
+    <div class="start-copy">
+      <p class="eyebrow">ONE DEPENDENCY. ROOM TO GROW.</p>
+      <h2 id="start-heading">Your next idea<br />starts here.</h2>
+      <p>
+        Add Jaspring to your Spring Boot application.<br />Give your Java a
+        frontend.
+      </p>
+      <a class="button" href="/docs/installation"
+        >Let’s build something <span aria-hidden="true">→</span></a
+      >
+    </div>
+    <div class="install-card">
+      <div class="code-block-heading">
+        <span><span class="file-dot"></span> build.gradle</span
+        ><button
+          class="copy-button"
+          type="button"
+          data-copy
+          aria-label="Copy Gradle dependency"
+        >
+          Copy <span aria-hidden="true">⧉</span>
+        </button>
+      </div>
+      <pre><code>{{ dependency }}</code></pre>
+      <div class="install-footer">
+        <span>Requires Java 25 + Spring Boot 4.1.x</span
+        ><a href="/docs/installation#maven">Using Maven? ↗</a>
+      </div>
+    </div>
+  </section>
+  <div class="experimental-note container">
+    <span class="status-dot"></span>
+    <p>
+      Growing in the open. Jaspring is experimental.
+      <a href="/docs/compatibility"
+        >Explore the current capabilities and limitations ↗</a
+      >
+    </p>
+  </div>
+</main>
