@@ -9,7 +9,7 @@ import java.util.List;
 @Component(selector = "site-docs", templateUrl = "docs.component.html", preserveWhitespaces = true)
 public class DocsComponent {
     @Input public DocPage page;
-    public final List<String> groups = List.of("Start here", "Core concepts", "Go further");
+    public final List<String> groups = List.of("Start here", "Core concepts", "Browser", "Go further", "Cookbook");
     private final Documentation documentation;
 
     public DocsComponent(Documentation documentation) { this.documentation = documentation; }

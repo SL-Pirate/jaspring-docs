@@ -29,5 +29,5 @@ public class LandingComponent {
             <span>{{ count() }}</span>
             <p>Doubled: {{ doubled() }}</p>
             """;
-    public final String dependency = "implementation 'dev.isira:jaspring-spring-boot-starter:0.2.0'";
+    public final String dependency = "implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'";
 }

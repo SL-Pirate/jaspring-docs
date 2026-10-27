@@ -38,6 +38,17 @@ class JaspringDocsApplicationTests {
     }
 
     @Test
+    void sidebarListsEveryDocument() throws Exception {
+        try (final var client = HttpClient.newHttpClient()) {
+            final var sidebar = extract("(?s)(<nav aria-label=\"Documentation topics\">.*?</nav>)",
+                    get(client, "/docs/introduction").body());
+            for (final var page : documentation.pages()) {
+                assertTrue(sidebar.contains("href=\"/docs/" + page.slug() + "\""), page.slug());
+            }
+        }
+    }
+
+    @Test
     void liveCounterReturnsPatchesAndRemainsOwnedByItsSession() throws Exception {
         try (final var client = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
              final var stranger = HttpClient.newHttpClient()) {

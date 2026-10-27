@@ -45,8 +45,8 @@
         "id": "project-status",
         "title": "Growing in the open",
         "paragraphs": [
-          "Jaspring 0.2.0 is experimental and MIT licensed. Server rendering, live events, signals, and change detection are available in the published starter. The current master checkout adds client hooks, browser calls, and Java browser closures compiled to WebAssembly. Static generation and incremental regeneration are future work.",
-          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.2.0 release. Newer browser-interoperability APIs are documented as source-build features."
+          "Jaspring 0.3.0 is experimental and MIT licensed. The published starter includes server rendering, live events, signals, change detection, and the browser APIs: client hooks, browser calls, and Java browser closures compiled to WebAssembly. Static generation and incremental regeneration are future work.",
+          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.3.0 release."
         ],
         "code": "",
         "language": "",
@@ -67,7 +67,7 @@
         "title": "Before you begin",
         "paragraphs": [
           "Use Java 25 and Spring Boot 4.1.x. Oracle GraalVM 25.2.4 matches the bundled GraalJS runtime and enables optimized startup compilation. Other Java 25 distributions work with the interpreter and can start more slowly.",
-          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler and styling tools are already bundled in the framework. The optional Java-to-WebAssembly browser feature has additional build requirements, covered in Browser interop."
+          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler and styling tools are already bundled in the framework. Java browser closures are optional and have extra build requirements, covered in WebAssembly build."
         ],
         "code": "",
         "language": "",
@@ -80,7 +80,7 @@
         "paragraphs": [
           "Add Maven Central and the Jaspring starter to an existing Spring Boot application. Add Spring Boot’s WebSocket starter for the default live transport; without it, Jaspring uses HTTP."
         ],
-        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.2.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
@@ -91,7 +91,7 @@
         "paragraphs": [
           "Use the same starter coordinates in your Spring Boot Maven project. Configure native access for the Java process that starts the application."
         ],
-        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.2.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
+        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.3.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
         "language": "html",
         "filename": "pom.xml",
         "note": ""
@@ -447,6 +447,528 @@
     ]
   },
   {
+    "slug": "browser-interop",
+    "group": "Browser",
+    "title": "Browser interop",
+    "description": "Jaspring renders on the server. When work belongs in the browser, reach it with JavaScript hooks and calls, or with Java closures compiled to WebAssembly.",
+    "source": "docs/browser.md",
+    "sections": [
+      {
+        "id": "two-ways",
+        "title": "Two ways to reach the browser",
+        "paragraphs": [
+          "Some work only the browser can do: draw on a canvas, read localStorage, ask for the user's location, or wrap a JavaScript widget. Jaspring gives you two tools for it. Both use the same page connection as events and patches.",
+          "Client hooks and browser calls are plain JavaScript. Use them for widgets, third-party libraries, and pages where every kilobyte counts. Java browser closures are Java lambdas compiled to WebAssembly at build time. Use them when you want one language and can afford the runtime download."
+        ],
+        "code": "Client hooks        JavaScript bound to an element's lifetime\n                    data-jsp-hook + jaspring.hooks.register\nBrowser calls       Java asks the browser for a value\n                    Browser.current().call(...) + jaspring.calls.register\nBrowser closures    A Java lambda runs in the browser as WebAssembly\n                    Platform.onBrowser(client -> ...)",
+        "language": "text",
+        "filename": "The browser APIs",
+        "note": ""
+      },
+      {
+        "id": "choose",
+        "title": "Choose the right tool",
+        "paragraphs": [
+          "Use a client hook when an element needs browser code for its whole life: a chart, a map, a canvas, or a date picker. Use a browser call when Java needs one answer from the browser, such as a size, a stored value, or the result of a widget method. Use a Java closure when you want to write that browser code in Java and the WebAssembly build fits your toolchain.",
+          "Hooks and calls work with any Java 25 runtime and need no extra build step. Java closures need Oracle GraalVM with Web Image and Binaryen at build time, and a browser with WebAssembly GC support at run time."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "how-it-flows",
+        "title": "How a browser round trip works",
+        "paragraphs": [
+          "Browser work is part of the page protocol. A call sent during an event travels with that turn's patches, after them, so a hook mounted by a patch exists before a call targets it. A call made while the page is first rendered travels with the document and does not delay it.",
+          "The answer returns to the same page. Jaspring completes the ZoneTask inside a page turn, so the continuation may write signals. Changed views go out as patches, exactly like the result of a fork."
+        ],
+        "code": "Java handler → Browser.current().call(\"viewport\")\n    → call message (after this turn's patches)\n    → registered JavaScript function runs\n    → result message\n    → ZoneTask completes inside a page turn\n    → signal writes → patches",
+        "language": "text",
+        "filename": "A browser call",
+        "note": ""
+      },
+      {
+        "id": "boundaries",
+        "title": "Know the boundaries",
+        "paragraphs": [
+          "The server owns the markup. When a view changes, the browser runtime morphs its host element to the new server HTML. DOM changes made by browser code inside that view are transient, so keep lasting state in signals, and keep widget state in the hook or closure, not in the markup.",
+          "Everything sent to the browser is visible to the user. Never pass secrets as call arguments, hook parameters, or closure captures. Treat values coming back from the browser as user input and validate them in Java.",
+          "With jaspring.live.transport=off there is no client runtime. Every browser call and closure fails at once with BrowserCallException, and page scripts must not expect window.jaspring."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "client-hooks",
+    "group": "Browser",
+    "title": "Client hooks",
+    "description": "Bind JavaScript to an element's lifetime. Hooks mount, update, and clean up as patches change the page.",
+    "source": "docs/events.md",
+    "sections": [
+      {
+        "id": "mark-the-element",
+        "title": "Mark the element",
+        "paragraphs": [
+          "Add data-jsp-hook with the hook name to any element in a template. Pass data with data-jsp-hook-params. The value is parsed as JSON, so the json pipe is the easy way to send a list, a map, or a record.",
+          "Nothing on the server knows about hooks. The template only has an attribute and, if needed, an ordinary event binding."
+        ],
+        "code": "<canvas width=\"240\" height=\"60\"\n        data-jsp-hook=\"sparkline\"\n        [attr.data-jsp-hook-params]=\"points() | json\"\n        (point-picked)=\"pick($event.detail.index)\"></canvas>",
+        "language": "html",
+        "filename": "sparkline.component.html",
+        "note": ""
+      },
+      {
+        "id": "register-the-hook",
+        "title": "Register the hook",
+        "paragraphs": [
+          "Register the hook from a page script with jaspring.hooks.register(name, hook). Each method receives the element and a context object. Register at any time: elements already on the page mount as soon as their hook is registered."
+        ],
+        "code": "jaspring.hooks.register('sparkline', {\n  mounted(el, ctx) {\n    this.draw(el, ctx.params);\n    el.addEventListener('click', (event) => {\n      const index = Math.floor(event.offsetX / (el.width / ctx.params.length));\n      ctx.pushEvent('point-picked', { index });\n    });\n  },\n  updated(el, ctx) {\n    this.draw(el, ctx.params);\n  },\n  destroyed(el) { },\n  draw(el, points) { /* canvas drawing */ },\n  size(el) {\n    return { width: el.width, height: el.height };\n  }\n});",
+        "language": "javascript",
+        "filename": "src/main/resources/static/sparkline.js",
+        "note": ""
+      },
+      {
+        "id": "lifecycle",
+        "title": "Follow the lifecycle",
+        "paragraphs": [
+          "mounted runs when a hooked element is in the document: at page load, after a patch adds it, or when the hook is registered later. updated runs after a patch morphs the view that contains the element; ctx.params is read again first. destroyed runs when the element leaves the document.",
+          "A hook can define more methods. They do not run on their own. The server calls them with Browser.current().call(\"hook.method\"), as described in Browser calls.",
+          "Errors thrown by mounted, updated, or destroyed are logged to the browser console and do not stop the page."
+        ],
+        "code": "mounted(el, ctx)     element entered the document\nupdated(el, ctx)     its view was patched; ctx.params is fresh\ndestroyed(el, ctx)   element left the document\nother(el, ctx, ...)  called by the server as \"hook.other\"",
+        "language": "text",
+        "filename": "Hook methods",
+        "note": ""
+      },
+      {
+        "id": "context",
+        "title": "Use the context",
+        "paragraphs": [
+          "ctx.el is the element. ctx.name is the hook name. ctx.page is the live page id. ctx.params is the parsed data-jsp-hook-params value: an empty object when the attribute is missing, and the raw string when it is not valid JSON.",
+          "ctx.pushEvent(type, detail) dispatches a bubbling CustomEvent from the element. The component receives it through an ordinary binding such as (point-picked)=\"pick($event.detail.index)\"."
+        ],
+        "code": "public void pick(Number index) {\n    final var value = points.get().get(index.intValue());\n    picked.set(\"Picked point #\" + (index.intValue() + 1) + \" with value \" + value);\n}",
+        "language": "java",
+        "filename": "SparklineComponent.java",
+        "note": ""
+      },
+      {
+        "id": "one-object-many-elements",
+        "title": "One hook object, many elements",
+        "paragraphs": [
+          "A registered hook is one object shared by every element that uses its name. this points to that shared object, so it is a good place for helper methods but not for per-element state.",
+          "Keep per-element state in a WeakMap keyed by the element. The entry goes away with the element."
+        ],
+        "code": "const widgets = new WeakMap();\n\njaspring.hooks.register('editor', {\n  mounted(el, ctx) { widgets.set(el, createEditor(el, ctx.params)); },\n  destroyed(el) {\n    widgets.get(el)?.dispose();\n    widgets.delete(el);\n  }\n});",
+        "language": "javascript",
+        "filename": "Per-element state",
+        "note": ""
+      },
+      {
+        "id": "patches-and-hooked-dom",
+        "title": "Patches and hook-managed DOM",
+        "paragraphs": [
+          "A patch morphs the whole view to the server's HTML, including the hooked element and its children. Attributes, inline styles, and child nodes that your script added are removed when the enclosing view changes. Then updated runs.",
+          "Design hooks for this. Draw into a canvas, or re-apply what you need in updated. Keep the hooked element in a small component, so patches of unrelated state do not reach it as often. Canvas pixels are not DOM and survive a morph."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "load-the-script",
+        "title": "Load the page script",
+        "paragraphs": [
+          "The client runtime is added at the end of <body>, so window.jaspring does not exist while <head> is parsed. Load hook scripts with type=\"module\" or defer. Both run after the runtime.",
+          "Put the script in the layout, src/main/resources/jaspring/index.html. Files under src/main/resources/static are served from the site root by Spring Boot."
+        ],
+        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>My app</title>\n  <script type=\"module\" src=\"/sparkline.js\"></script>\n</head>",
+        "language": "html",
+        "filename": "src/main/resources/jaspring/index.html",
+        "note": "With jaspring.live.transport=off the runtime is not loaded. Guard shared scripts with if (window.jaspring) when a page may render without it."
+      }
+    ]
+  },
+  {
+    "slug": "browser-calls",
+    "group": "Browser",
+    "title": "Browser calls",
+    "description": "Ask the browser for a value from Java. The answer comes back inside a page turn, ready to write signals.",
+    "source": "jaspring-core/src/main/java/dev/isira/jaspring/browser/Browser.java",
+    "sections": [
+      {
+        "id": "register-a-function",
+        "title": "Register a page function",
+        "paragraphs": [
+          "Register a function with jaspring.calls.register(name, fn). The function receives the call arguments and returns a JSON value or a promise of one."
+        ],
+        "code": "jaspring.calls.register('viewport', () => ({\n  width: window.innerWidth,\n  height: window.innerHeight\n}));\n\njaspring.calls.register('confirm', (message) => window.confirm(message));",
+        "language": "javascript",
+        "filename": "src/main/resources/static/app.js",
+        "note": ""
+      },
+      {
+        "id": "call-from-java",
+        "title": "Call it from Java",
+        "paragraphs": [
+          "Get the browser with Browser.current() inside a turn: a constructor, a lifecycle hook, an event handler, or a fork continuation. call(target, args...) returns a ZoneTask. Its continuation runs inside a page turn, so it may write signals.",
+          "Arguments are sent as JSON. Use strings, numbers, booleans, lists, maps, and records of those."
+        ],
+        "code": "public void measure() {\n    Browser.current().call(\"viewport\")\n            .whenComplete((viewport, error) -> status.set(\n                    error == null ? \"viewport \" + viewport : error.getMessage()));\n}\n\npublic void delete() {\n    Browser.current().<Boolean>call(\"confirm\", \"Delete this item?\")\n            .thenAccept(confirmed -> { if (confirmed) deleteSelected(); });\n}",
+        "language": "java",
+        "filename": "A component",
+        "note": ""
+      },
+      {
+        "id": "call-a-hook",
+        "title": "Call a hook method",
+        "paragraphs": [
+          "A dotted target such as sparkline.size runs the size method of the sparkline hook mounted inside the current component's host element. The method receives (el, ctx, ...args).",
+          "Obtain Browser.current() in the component that owns the hooked element. A dotted target with no current component fails at once with IllegalStateException."
+        ],
+        "code": "Browser.current().call(\"sparkline.size\")\n        .thenAccept(size -> status.set(\"canvas \" + size));",
+        "language": "java",
+        "filename": "SparklineComponent.java",
+        "note": ""
+      },
+      {
+        "id": "results",
+        "title": "Read the result",
+        "paragraphs": [
+          "The value arrives as parsed JSON: Map, List, String, Number, Boolean, or null. undefined becomes null. The type parameter of call is an unchecked cast, so read numbers as Number and convert them.",
+          "Keep results small. In 0.3.0 the WebSocket transport closes the connection when a single message is larger than the server's text message limit, 8 KB with Tomcat's defaults. Do not return images, files, or large documents through a call; send them to an ordinary endpoint instead."
+        ],
+        "code": "Browser.current().<Map<String, Object>>call(\"viewport\").thenAccept(viewport -> {\n    final var width = ((Number) viewport.get(\"width\")).intValue();\n    compact.set(width < 640);\n});",
+        "language": "java",
+        "filename": "Typed access",
+        "note": ""
+      },
+      {
+        "id": "failures",
+        "title": "Handle failures",
+        "paragraphs": [
+          "The task fails with BrowserCallException when the browser function throws or rejects, when the target is not registered, when no answer arrives within 30 seconds, or when live events are off. Destroying the page cancels open calls.",
+          "whenComplete usually receives a CompletionException. The browser's reason is its cause.",
+          "The page stays unstable until the answer arrives. Over HTTP, the client keeps polling until every open call is answered."
+        ],
+        "code": "Browser.current().call(\"chart.exportCsv\").whenComplete((csv, error) -> {\n    if (error != null) {\n        status.set(\"Export failed\");\n        return;\n    }\n    status.set(\"Exported\");\n});",
+        "language": "java",
+        "filename": "Error handling",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "third-party-libraries",
+    "group": "Browser",
+    "title": "Third-party JavaScript",
+    "description": "Use browser libraries such as Chart.js with Jaspring. Load them in the layout and wrap them in a client hook.",
+    "source": "docs/events.md",
+    "sections": [
+      {
+        "id": "the-pattern",
+        "title": "The pattern",
+        "paragraphs": [
+          "Jaspring does not bundle JavaScript, so a browser library is used the same way as on any server-rendered page. Load it in the layout. Wrap it in a client hook. Send data with hook parameters, send user actions back with ctx.pushEvent, and let Java ask for results with browser calls.",
+          "This page builds a Chart.js bar chart. The same steps work for maps, editors, and date pickers."
+        ],
+        "code": "1. Add the library    WebJar, CDN, or a file under static/\n2. Load it            <script> in jaspring/index.html\n3. Wrap it            jaspring.hooks.register('chart', ...)\n4. Feed it            [attr.data-jsp-hook-params]=\"data | json\"\n5. Listen             ctx.pushEvent → (event)=\"handler()\"\n6. Ask it             Browser.current().call(\"chart.method\")",
+        "language": "text",
+        "filename": "Steps",
+        "note": ""
+      },
+      {
+        "id": "add-the-library",
+        "title": "Add the library",
+        "paragraphs": [
+          "A WebJar puts the library on the classpath, and Spring Boot serves it under /webjars/. Gradle manages the version, and the page does not depend on a CDN at run time. Add webjars-locator-lite to use URLs without the version number.",
+          "A CDN link or a copied file under src/main/resources/static works too. Pick one and keep the layout as the single place that loads browser libraries."
+        ],
+        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.webjars.npm:chart.js:4.6.1'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "load-it",
+        "title": "Load it in the layout",
+        "paragraphs": [
+          "Load the library with defer and the hook script with type=\"module\". Deferred and module scripts run in document order after the page is parsed, so the library is ready when the hook registers, and the Jaspring runtime exists."
+        ],
+        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>Sales</title>\n  <script src=\"/webjars/chart.js/dist/chart.umd.min.js\" defer></script>\n  <script type=\"module\" src=\"/chart-hook.js\"></script>\n</head>\n<body>\n  <app-root></app-root>\n</body>",
+        "language": "html",
+        "filename": "src/main/resources/jaspring/index.html",
+        "note": ""
+      },
+      {
+        "id": "wrap-it",
+        "title": "Wrap it in a hook",
+        "paragraphs": [
+          "Create the widget in mounted and keep it in a WeakMap keyed by the element. Feed new data in updated. Release it in destroyed. Extra methods, such as total here, answer browser calls.",
+          "updated also runs when a patch of the enclosing view resets attributes that Chart.js added to the canvas. Calling resize() before update() puts them back."
+        ],
+        "code": "const charts = new WeakMap();\n\njaspring.hooks.register('chart', {\n  mounted(el, ctx) {\n    charts.set(el, new Chart(el, {\n      type: 'bar',\n      data: {\n        labels: ctx.params.labels,\n        datasets: [{ label: 'Sales', data: ctx.params.values }]\n      },\n      options: {\n        maintainAspectRatio: false,\n        onClick: (_, bars) => bars.length && ctx.pushEvent('bar-picked', { index: bars[0].index })\n      }\n    }));\n  },\n  updated(el, ctx) {\n    const chart = charts.get(el);\n    chart.data.labels = ctx.params.labels;\n    chart.data.datasets[0].data = ctx.params.values;\n    chart.resize();\n    chart.update();\n  },\n  destroyed(el) {\n    charts.get(el)?.destroy();\n    charts.delete(el);\n  },\n  total(el) {\n    return charts.get(el).data.datasets[0].data.reduce((sum, value) => sum + value, 0);\n  }\n});",
+        "language": "javascript",
+        "filename": "src/main/resources/static/chart-hook.js",
+        "note": ""
+      },
+      {
+        "id": "bind-it",
+        "title": "Bind it in a component",
+        "paragraphs": [
+          "Send a record through the json pipe. The chart sits in its own component, inside a sized wrapper, so the library can measure it and unrelated patches rarely reach it."
+        ],
+        "code": "<div class=\"chart-box\">\n  <canvas data-jsp-hook=\"chart\"\n          [attr.data-jsp-hook-params]=\"series() | json\"\n          (bar-picked)=\"pick($event.detail.index)\"></canvas>\n</div>\n<p>{{ selected() }}</p>\n<button (click)=\"showTotal()\">Total</button>",
+        "language": "html",
+        "filename": "sales-chart.component.html",
+        "note": ""
+      },
+      {
+        "id": "talk-to-it",
+        "title": "Talk to it from Java",
+        "paragraphs": [
+          "The click arrives as an ordinary event. The total comes back from the hook method through a browser call. Both continuations run in a page turn and write signals."
+        ],
+        "code": "@Component(selector = \"app-sales-chart\", templateUrl = \"sales-chart.component.html\", styles = \"\"\"\n        .chart-box { position: relative; height: 240px; }\n        \"\"\")\npublic class SalesChartComponent {\n    public record Series(List<String> labels, List<Integer> values) {}\n\n    public final WritableSignal<Series> series = Signals.signal(\n            new Series(List.of(\"Q1\", \"Q2\", \"Q3\"), List.of(12, 19, 7)));\n    public final WritableSignal<String> selected = Signals.signal(\"\");\n\n    public void pick(Number index) {\n        selected.set(series.get().labels().get(index.intValue()));\n    }\n\n    public void showTotal() {\n        Browser.current().<Number>call(\"chart.total\")\n                .thenAccept(total -> selected.set(\"Total \" + total));\n    }\n}",
+        "language": "java",
+        "filename": "SalesChartComponent.java",
+        "note": ""
+      },
+      {
+        "id": "checklist",
+        "title": "Checklist for any library",
+        "paragraphs": [
+          "Load the library before the hook script, with defer or as a module. Keep one widget per element in a WeakMap. Expect a patch to reset DOM the library changed, and restore it in updated. Clean up timers, listeners, and widget instances in destroyed.",
+          "Send data in, not markup. Return small JSON values from hook methods. Libraries that replace or move the hooked element itself do not fit this model; give them a child element they own."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Verified with Jaspring 0.3.0, Chart.js 4.6.1 from a WebJar, and headless Chromium: the chart survives patches of its parent view, data changes reach updated, bar clicks reach Java, and small hook results return through calls."
+      }
+    ]
+  },
+  {
+    "slug": "browser-closures",
+    "group": "Browser",
+    "title": "Java browser closures",
+    "description": "Write browser code in Java. Platform.onBrowser runs a lambda in the browser, compiled to WebAssembly at build time.",
+    "source": "docs/browser.md",
+    "sections": [
+      {
+        "id": "run-a-closure",
+        "title": "Run a closure",
+        "paragraphs": [
+          "Platform.onBrowser takes a BrowserTask: a lambda that receives a BrowserClient and returns a value. The server sends the lambda's id and captured values to the browser. The compiled body runs there with the real DOM, and the result comes back as JSON.",
+          "The ZoneTask completes inside a page turn, so continuations may write signals, exactly like a fork."
+        ],
+        "code": "@Component(selector = \"app-theme\", templateUrl = \"theme.component.html\")\npublic class ThemeComponent implements OnInit {\n    public final WritableSignal<String> theme = Signals.signal(\"light\");\n\n    @Override\n    public void ngOnInit() {\n        Platform.onBrowser(client -> client.localStorage().get(\"theme\").orElse(\"light\"))\n                .thenAccept(theme::set);\n    }\n\n    public void toggle() {\n        final var next = theme.get().equals(\"dark\") ? \"light\" : \"dark\";\n        Platform.onBrowser(client -> {\n            client.localStorage().set(\"theme\", next);\n            return next;\n        }).thenAccept(theme::set);\n    }\n}",
+        "language": "java",
+        "filename": "ThemeComponent.java",
+        "note": ""
+      },
+      {
+        "id": "wait-for-a-promise",
+        "title": "Wait for a browser promise",
+        "paragraphs": [
+          "Some browser APIs answer later. Use Platform.onBrowserAsync(type, task) when the closure returns a BrowserPromise. The class token names the value type, which erasure hides from the server and the build.",
+          "BrowserPromise.then maps the value in the browser before it is sent. There is no way to block on it in Java. BrowserPromise.of(value) wraps a value that is already available."
+        ],
+        "code": "public void locate() {\n    Platform.onBrowserAsync(Position.class, client -> client.geolocation().current())\n            .whenComplete((position, error) -> where.set(error == null\n                    ? position.latitude() + \", \" + position.longitude()\n                    : \"Location unavailable\"));\n}\n\npublic void copy() {\n    final var text = where.get();\n    Platform.onBrowserAsync(Void.class, client -> client.clipboard().writeText(text))\n            .whenComplete((ignored, error) -> status.set(error == null ? \"copied\" : \"copy failed\"));\n}",
+        "language": "java",
+        "filename": "Async closures",
+        "note": ""
+      },
+      {
+        "id": "what-a-closure-may-do",
+        "title": "What a closure may do",
+        "paragraphs": [
+          "A closure runs in the browser. It cannot touch Spring beans, signals, services, or this. The build fails and names the method when a lambda uses instance members. Copy what it needs into local variables first.",
+          "Captured values and results travel as JSON: primitives and their boxes, String, enums, records of those, and arrays. List, Map<String, T>, and Optional are allowed inside records. At the top level, erasure hides their element type, so wrap them in a record.",
+          "Static fields and initialisers of the component class are compiled into the module. Treat that as a hazard, and never capture secrets: everything a closure carries is visible in the page."
+        ],
+        "code": "public record Draft(String title, List<String> tags) {}\n\npublic void saveDraft() {\n    final var draft = new Draft(title.get(), tags.get());   // copy state into a local\n    Platform.onBrowser(client -> {\n        client.sessionStorage().set(\"draft-title\", draft.title());\n        return draft.tags().size();\n    }).thenAccept(count -> status.set(\"Saved with \" + count + \" tags\"));\n}",
+        "language": "java",
+        "filename": "Captures",
+        "note": ""
+      },
+      {
+        "id": "host-and-events",
+        "title": "Work with the host element",
+        "paragraphs": [
+          "client.host() is the component's own host element. Query inside it, read and write attributes, classes, text, and values, move focus, and read bounds.",
+          "DOM writes are transient: the next patch morphs the host from server HTML. Lasting state belongs in signals. To report something to the template, dispatch a custom event and bind it as usual."
+        ],
+        "code": "public void toggleTheme() {\n    final var next = \"dark\".equals(theme.get()) ? \"light\" : \"dark\";\n    Platform.onBrowser(client -> {\n        client.localStorage().set(\"theme\", next);\n        client.host().toggleClass(\"dark\", \"dark\".equals(next));\n        client.host().dispatch(\"theme-changed\", next);\n        return next;\n    }).thenAccept(theme::set);\n}\n\n// template: <section (theme-changed)=\"announce($event.detail)\"> ... </section>",
+        "language": "java",
+        "filename": "Host element",
+        "note": ""
+      },
+      {
+        "id": "when-the-build-is-missing",
+        "title": "When the build is missing",
+        "paragraphs": [
+          "Without a WebAssembly build, Platform.onBrowser throws BrowserClosuresUnavailableException with the reason. A class recompiled by an IDE or devtools without a new image fails with \"stale build\" instead of running old code.",
+          "In the browser, a call fails with BrowserCallException when the browser lacks WebAssembly GC and exception handling. Current Chrome, Firefox, and Safari 18.2 or later support both."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "Closures need the Jaspring Gradle plugin and the GraalVM toolchain described in WebAssembly build. Hooks and browser calls do not."
+      }
+    ]
+  },
+  {
+    "slug": "browser-client",
+    "group": "Browser",
+    "title": "BrowserClient API",
+    "description": "The browser facade a closure receives: the host element, storage, cookies, location, geolocation, clipboard, notifications, and vibration.",
+    "source": "jaspring-core/src/main/java/dev/isira/jaspring/browser/BrowserClient.java",
+    "sections": [
+      {
+        "id": "overview",
+        "title": "The facade",
+        "paragraphs": [
+          "Every method of BrowserClient runs in the browser, inside jaspring-browser-runtime. Nothing in it touches the server. The types live in dev.isira.jaspring.browser."
+        ],
+        "code": "public interface BrowserClient {\n    HostElement host();\n    Storage localStorage();\n    Storage sessionStorage();\n    Cookies cookies();\n    Location location();\n    Geolocation geolocation();\n    Clipboard clipboard();\n    Notifications notifications();\n    Vibration vibration();\n}",
+        "language": "java",
+        "filename": "BrowserClient.java",
+        "note": ""
+      },
+      {
+        "id": "elements",
+        "title": "Elements",
+        "paragraphs": [
+          "host() returns the component's host element. Element queries are limited to that subtree. bounds() returns getBoundingClientRect() in CSS pixels. value() reads the value property of form controls and is empty for other elements. dispatch sends a bubbling CustomEvent that a template binding receives under $event.detail."
+        ],
+        "code": "Optional<Element> query(String selector)\nList<Element> queryAll(String selector)\nOptional<String> attribute(String name)\nvoid attribute(String name, String value)\nvoid removeAttribute(String name)\nboolean hasClass(String name)\nvoid addClass(String... names)\nvoid removeClass(String... names)\nvoid toggleClass(String name, boolean on)\nString text()            void text(String text)\nString value()           void value(String value)\nvoid focus()             void blur()\nvoid scrollIntoView()\nElementBounds bounds()   // x, y, width, height\nvoid dispatch(String type)\nvoid dispatch(String type, String detail)\nlong viewId()            // HostElement only",
+        "language": "java",
+        "filename": "Element and HostElement",
+        "note": ""
+      },
+      {
+        "id": "storage-and-cookies",
+        "title": "Storage and cookies",
+        "paragraphs": [
+          "localStorage() and sessionStorage() share the Storage interface. cookies() sees only what JavaScript can see, so HttpOnly cookies are not visible. CookieOptions.DEFAULT uses path /, no max age, not secure, and SameSite Lax."
+        ],
+        "code": "// Storage\nOptional<String> get(String key)\nvoid set(String key, String value)\nvoid remove(String key)\nvoid clear()\nList<String> keys()\n\n// Cookies\nOptional<String> get(String name)\nMap<String, String> all()\nvoid set(String name, String value, CookieOptions options)\nvoid remove(String name)\nrecord CookieOptions(String path, Integer maxAgeSeconds, boolean secure, String sameSite)",
+        "language": "java",
+        "filename": "Storage and Cookies",
+        "note": ""
+      },
+      {
+        "id": "location",
+        "title": "Location",
+        "paragraphs": [
+          "Location reads window.location. Only the hash may be written. Navigation belongs to the server, through LivePage.redirect."
+        ],
+        "code": "String href()\nString pathname()\nString search()\nString hash()\nvoid hash(String fragment)",
+        "language": "java",
+        "filename": "Location",
+        "note": ""
+      },
+      {
+        "id": "device-apis",
+        "title": "Geolocation, clipboard, notifications, vibration",
+        "paragraphs": [
+          "Methods that return BrowserPromise need Platform.onBrowserAsync. The browser asks for permission where the API requires it. The clipboard works only in secure contexts, and reading usually needs a user gesture. Position fields accuracy, altitude, heading, and speed are null when the device does not report them. vibrate returns false when the device cannot vibrate."
+        ],
+        "code": "// Geolocation\nBrowserPromise<Position> current()\nBrowserPromise<Position> current(GeolocationOptions options)   // DEFAULT: 10 s timeout\nrecord Position(double latitude, double longitude, Double accuracy, Double altitude,\n                Double heading, Double speed, long timestamp)\n\n// Clipboard\nBrowserPromise<Void> writeText(String text)\nBrowserPromise<String> readText()\n\n// Notifications\nPermissionState permission()                 // GRANTED, DENIED, PROMPT\nBrowserPromise<PermissionState> requestPermission()\nvoid show(String title, NotificationOptions options)   // no-op without permission\n\n// Vibration\nboolean vibrate(int... patternMillis)",
+        "language": "java",
+        "filename": "Device APIs",
+        "note": ""
+      },
+      {
+        "id": "promises",
+        "title": "BrowserPromise",
+        "paragraphs": [
+          "BrowserPromise<T> is a value the browser produces later. then maps it in the browser, before the value is sent to the server. BrowserPromise.of wraps a value that is already available, for closures that only sometimes need to wait."
+        ],
+        "code": "public interface BrowserPromise<T> {\n    <U> BrowserPromise<U> then(Function<? super T, ? extends U> next);\n    static <T> BrowserPromise<T> of(T value);\n}",
+        "language": "java",
+        "filename": "BrowserPromise",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "slug": "webassembly-build",
+    "group": "Browser",
+    "title": "WebAssembly build",
+    "description": "The Gradle plugin compiles every browser closure into one WebAssembly module with GraalVM Web Image.",
+    "source": "jaspring-gradle-plugin/README.md",
+    "sections": [
+      {
+        "id": "requirements",
+        "title": "What you need",
+        "paragraphs": [
+          "Oracle GraalVM 25.2.x, because Web Image is part of Oracle GraalVM and not GraalVM Community. Binaryen's wasm-as 119 or later on the PATH. On Fedora use dnf install binaryen; on macOS use brew install binaryen. Ubuntu 24.04 packages an older version, so use a Binaryen release.",
+          "Apply the Jaspring Gradle plugin with the same version as the starter. The plugin adds the matching jaspring-browser-runtime to the jaspringBrowser configuration."
+        ],
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.3.0'\n}",
+        "language": "gradle",
+        "filename": "Gradle setup",
+        "note": ""
+      },
+      {
+        "id": "tasks",
+        "title": "The build tasks",
+        "paragraphs": [
+          "The plugin wires three tasks into the build when the java plugin is applied. Projects without closures skip the last two, so applying the plugin costs nothing until you write one."
+        ],
+        "code": "scanBrowserClosures       find BrowserTask lambdas in the compiled classes\ncompileBrowserDispatcher  compile the generated entry point against jaspring-browser-runtime\nbuildBrowserImage         native-image --tool:svm-wasm → jaspring-app.js, jaspring-app.js.wasm,\n                          jaspring/jaspring-browser.json in the application's resources",
+        "language": "text",
+        "filename": "Tasks",
+        "note": ""
+      },
+      {
+        "id": "settings",
+        "title": "Configure the build",
+        "paragraphs": [
+          "graalvmHome defaults to GRAALVM_HOME, then to the JDK running Gradle when it is GraalVM. A closure that calls into another library needs that jar on imageClasspath. Library jars are excluded by default, because their Native Image metadata does not apply to the WebAssembly backend.",
+          "Without the toolchain the build fails with a message naming what to install. -Pjaspring.browser.skip=true builds without the image. The properties jaspring.browser.graalvmHome and jaspring.browser.assemblerPath are also available."
+        ],
+        "code": "jaspring {\n    browser {\n        skip = false\n        graalvmHome = file('/opt/graalvm')\n        assemblerPath = file('/usr/bin/wasm-as')\n        nativeImageArgs.add('-H:+ReportImageSizeBreakdown')\n        imageClasspath.from(configurations.runtimeClasspath.filter { it.name.startsWith('commons-text') })\n    }\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "loading",
+        "title": "How the module loads",
+        "paragraphs": [
+          "There is one module per application. The server decides per page how to load it. Eager: a component on the page runs a closure while it mounts, so the page preloads the module and the result arrives shortly after first paint. Idle: the application has closures but none run at mount time, so the files are prefetched when the browser is idle, and the runtime starts on the first call or when the user hovers or focuses a handler that runs one. None: no build exists.",
+          "Assets are served from /_jaspring/app/<digest>/ with immutable caching. A new build gets new URLs."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "cost",
+        "title": "What it costs",
+        "paragraphs": [
+          "The module size is mostly the Java runtime, so a dozen closures cost about the same as one. Measured on a spike with Oracle GraalVM 25.2.4 and Binaryen 126:"
+        ],
+        "code": "native-image --tool:svm-wasm wall time    25 s\nbuild peak memory                         0.9 GB\nmodule (.js.wasm)                         1.34 MB raw, 487 KB gzip\nlauncher (.js)                            109 KB\nstart until the dispatcher is installed   260-290 ms (Node 24)",
+        "language": "text",
+        "filename": "Measured",
+        "note": "Web Image is experimental in GraalVM 25. Its generated API may change between GraalVM lines, so build with the GraalVM line that matches your Jaspring version."
+      }
+    ]
+  },
+  {
     "slug": "change-detection",
     "group": "Go further",
     "title": "Change detection",
@@ -502,63 +1024,6 @@
     ]
   },
   {
-    "slug": "browser-interop",
-    "group": "Go further",
-    "title": "Browser interop",
-    "description": "Reach the browser when the browser is the right place to work. Use JavaScript hooks or Java closures compiled to WebAssembly.",
-    "source": "docs/browser.md",
-    "sections": [
-      {
-        "id": "client-hooks",
-        "title": "Mount a client hook",
-        "paragraphs": [
-          "Add data-jsp-hook to an element and register the hook in a page script. mounted, updated, and destroyed follow that element’s lifetime. Use hooks for canvas, layout reads, or existing JavaScript widgets.",
-          "ctx.pushEvent dispatches a bubbling custom event that the template can bind normally. Hook parameters can be supplied through data-jsp-hook-params as JSON."
-        ],
-        "code": "jaspring.hooks.register('chart', {\n  mounted(el, ctx) {\n    el.onclick = () => ctx.pushEvent('point-picked', { index: 2 });\n  },\n  updated(el, ctx) { /* redraw using ctx.params */ },\n  destroyed(el) { /* release client resources */ }\n});",
-        "language": "javascript",
-        "filename": "static/chart.js",
-        "note": "Source-build feature: this chapter describes the current master checkout. The published 0.2.0 starter does not yet expose the hooks, browser calls, or WebAssembly APIs shown here. Use a matching source build of the core, starter, and Gradle plugin."
-      },
-      {
-        "id": "browser-calls",
-        "title": "Ask the browser for a result",
-        "paragraphs": [
-          "Register a page-level JavaScript function with jaspring.calls.register, then call it from Java using Browser.current().call. A dotted target such as chart.size calls a method on a mounted hook in the component’s host.",
-          "The result completes inside a page turn, so its continuation may safely update signals. A missing function, client error, or timeout fails the task."
-        ],
-        "code": "// JavaScript\njaspring.calls.register('viewport', () => ({ width: innerWidth }));\n\n// Java, inside a component handler\nBrowser.current().call(\"viewport\")\n        .thenAccept(value -> status.set(String.valueOf(value)));",
-        "language": "text",
-        "filename": "A browser round trip",
-        "note": ""
-      },
-      {
-        "id": "java-in-the-browser",
-        "title": "Run a Java closure in the browser",
-        "paragraphs": [
-          "Platform.onBrowser takes a Java lambda that receives a BrowserClient. The Gradle plugin compiles these closures into one WebAssembly module using GraalVM Web Image. The result travels back through the same page protocol.",
-          "Browser closures cannot access this, Spring beans, server signals, or secrets. Capture only serializable data. Supported values include primitives, strings, enums, records, and arrays; use records to carry typed collections."
-        ],
-        "code": "Platform.onBrowser(client ->\n        client.localStorage().get(\"theme\").orElse(\"dark\"))\n        .thenAccept(theme::set);",
-        "language": "java",
-        "filename": "Read browser storage",
-        "note": ""
-      },
-      {
-        "id": "webassembly-toolchain",
-        "title": "The optional WebAssembly toolchain",
-        "paragraphs": [
-          "Browser closures require Oracle GraalVM 25.2.x with Web Image, Binaryen wasm-as 119 or later, and the matching Jaspring Gradle plugin. GraalVM Community does not include Web Image.",
-          "The plugin scans closures, builds a dispatcher, and packages the launcher, WebAssembly module, and manifest as application resources. Set -Pjaspring.browser.skip=true to build without the image; invoking a closure then reports that the build is unavailable."
-        ],
-        "code": "",
-        "language": "",
-        "filename": "",
-        "note": "Hooks and browser calls work without WebAssembly. Browser closures add a Java runtime download and require browser support for WebAssembly GC and exception handling."
-      }
-    ]
-  },
-  {
     "slug": "tooling",
     "group": "Go further",
     "title": "Gradle & IDE tooling",
@@ -569,9 +1034,9 @@
         "id": "gradle-plugin",
         "title": "Apply the Gradle plugin",
         "paragraphs": [
-          "The Jaspring plugin provides build tooling. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the matching release."
+          "The Jaspring plugin provides build tooling: component scaffolding and the WebAssembly build of Java browser closures. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the same version as the starter."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.2.0'",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.3.0'",
         "language": "gradle",
         "filename": "Plugin configuration",
         "note": ""
@@ -629,7 +1094,7 @@
         "code": "",
         "language": "",
         "filename": "",
-        "note": "The architecture covers the current master source. Browser calls, client hooks, and Java browser closures are newer than the published 0.2.0 starter used by this website."
+        "note": ""
       },
       {
         "id": "startup",
@@ -735,7 +1200,7 @@
         "id": "current-status",
         "title": "Experimental, and usable for exploration",
         "paragraphs": [
-          "The published Jaspring 0.2.0 starter implements server-rendered components, live browser events, signals, and zone and zoneless change detection. Client hooks, browser calls, and Java-to-WebAssembly browser closures are implemented in the current master source and require a matching source build. Static generation and incremental regeneration remain future work.",
+          "The published Jaspring 0.3.0 starter implements server-rendered components, live browser events, signals, zone and zoneless change detection, client hooks, browser calls, and Java-to-WebAssembly browser closures. Static generation and incremental regeneration remain future work.",
           "A live page keeps its component tree and state on the server between events. Interaction depends on a working connection. Evaluate that architecture and the experimental API against your application’s needs."
         ],
         "code": "",
@@ -778,7 +1243,95 @@
         "code": "",
         "language": "",
         "filename": "",
-        "note": "Browser-closure support and its Gradle tasks describe master, not the published 0.2.0 artifacts. Keep the plugin, core, and starter on the same source revision when trying those features."
+        "note": "Keep the Gradle plugin, starter, and core on the same version. The plugin adds the matching jaspring-browser-runtime to the WebAssembly build."
+      }
+    ]
+  },
+  {
+    "slug": "font-awesome",
+    "group": "Cookbook",
+    "title": "Font Awesome icons",
+    "description": "Add Font Awesome from a WebJar and use its icons in any template. No JavaScript required.",
+    "source": "jaspring-spring-boot-starter/src/main/java/dev/isira/jaspring/boot/web/JaspringResourceConfiguration.java",
+    "sections": [
+      {
+        "id": "why-it-works",
+        "title": "Why it just works",
+        "paragraphs": [
+          "Font Awesome's web font version is plain CSS and font files. Icons are ordinary <i> elements in server HTML, so they render on first paint and survive every patch.",
+          "Jaspring keeps Spring Boot's static resource handling. The starter only adds /_jaspring/**, so Spring Boot still serves WebJars under /webjars/**. Your layout is plain HTML, so any stylesheet you link there reaches the browser unchanged."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "add-the-webjar",
+        "title": "Add the WebJar",
+        "paragraphs": [
+          "Add the Font Awesome WebJar. Add webjars-locator-lite as well if you want URLs without the version number, so an upgrade only touches build.gradle."
+        ],
+        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.webjars:font-awesome:7.3.0'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "link-the-stylesheet",
+        "title": "Link the stylesheet",
+        "paragraphs": [
+          "Link all.min.css in the layout. The stylesheet loads its fonts from the same WebJar. Without webjars-locator-lite, include the version: /webjars/font-awesome/7.3.0/css/all.min.css."
+        ],
+        "code": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>My app</title>\n  <link rel=\"stylesheet\" href=\"/webjars/font-awesome/css/all.min.css\">\n</head>\n<body>\n  <app-root></app-root>\n</body>\n</html>",
+        "language": "html",
+        "filename": "src/main/resources/jaspring/index.html",
+        "note": ""
+      },
+      {
+        "id": "use-icons",
+        "title": "Use icons in templates",
+        "paragraphs": [
+          "Write icons as usual. Bindings work on them like any element, so an icon can follow a signal. Mark decorative icons with aria-hidden and give icon-only buttons a label."
+        ],
+        "code": "<button (click)=\"save()\">\n  <i class=\"fa-solid fa-floppy-disk\" aria-hidden=\"true\"></i> Save\n</button>\n\n<button (click)=\"liked.set(!liked())\" aria-label=\"Like\">\n  <i [class]=\"liked() ? 'fa-solid fa-heart' : 'fa-regular fa-heart'\" aria-hidden=\"true\"></i>\n</button>\n\n@for (item of items(); track item.id) {\n  <li><i class=\"fa-solid fa-check\" aria-hidden=\"true\"></i> {{ item.name }}</li>\n}",
+        "language": "html",
+        "filename": "todo.component.html",
+        "note": ""
+      },
+      {
+        "id": "styles-and-tailwind",
+        "title": "Styles and Tailwind",
+        "paragraphs": [
+          "Font Awesome's CSS is global, so emulated encapsulation does not scope it and icons work in every component. Size and color icons from component styles or with Tailwind utilities on the <i> element. Tailwind sees fa-* names as candidates and ignores them, so the two do not conflict."
+        ],
+        "code": "<i class=\"fa-solid fa-circle-check text-green-600 text-xl\" aria-hidden=\"true\"></i>",
+        "language": "html",
+        "filename": "With Tailwind",
+        "note": ""
+      },
+      {
+        "id": "avoid-svg-js",
+        "title": "Use the CSS version, not SVG with JavaScript",
+        "paragraphs": [
+          "Font Awesome also ships an SVG + JavaScript version that replaces <i> tags with <svg> in the browser. Avoid it with Jaspring. Each patch morphs the view back to the server HTML, which has the <i>, and the script then replaces it again. You get extra DOM work and flicker on every update.",
+          "If you need inline SVG, render the SVG markup from the server in a small icon component instead."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "other-ways",
+        "title": "Other ways to load it",
+        "paragraphs": [
+          "A CDN link in the layout is the shortest path, but the page then depends on that CDN at run time. A copy of the files under src/main/resources/static works without any dependency, but you update it by hand. The WebJar keeps the version in Gradle, works offline, and fits a strict Content Security Policy."
+        ],
+        "code": "<!-- CDN -->\n<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css\">\n\n<!-- Copied into src/main/resources/static/fontawesome/ -->\n<link rel=\"stylesheet\" href=\"/fontawesome/css/all.min.css\">",
+        "language": "html",
+        "filename": "Alternatives",
+        "note": "Verified with Jaspring 0.3.0, Font Awesome 7.3.0 from a WebJar, and webjars-locator-lite 1.1.5: icons render on first paint and after live patches."
       }
     ]
   }
