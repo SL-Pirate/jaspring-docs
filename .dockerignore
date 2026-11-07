@@ -8,3 +8,5 @@
 !settings.gradle
 !src/
 !src/**
+!starter/
+!starter/**

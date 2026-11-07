@@ -10,6 +10,7 @@ COPY build.gradle settings.gradle ./
 RUN ./gradlew --no-daemon --console=plain dependencies
 
 COPY src/ src/
+COPY starter/ starter/
 RUN ./gradlew --no-daemon --console=plain test bootJar
 
 FROM ${JAVA_IMAGE} AS runtime

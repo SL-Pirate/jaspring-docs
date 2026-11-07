@@ -22,11 +22,16 @@ Override the port when needed:
 No Node.js installation is needed to run or package the application. The Jaspring Gradle plugin type-checks and compiles
 the browser script with its bundled TypeScript compiler.
 
+## Starter project
+
+`starter/` holds the starter project users download from the site. The build zips it and serves it at
+`/downloads/jaspring-starter.zip`. Keep it in sync with the Installation page; see [AGENTS.md](AGENTS.md).
+
 ## Validate and package
 
 ```sh
 ./gradlew test bootJar
-java --enable-native-access=ALL-UNNAMED -jar build/libs/jaspring-docs.jar
+java --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -jar build/libs/jaspring-docs.jar
 ```
 
 The integration suite starts an isolated server on a random port. It renders every documentation route,
@@ -85,7 +90,7 @@ Use a unique slug and unique section IDs within each page. Navigation, search, p
 The documentation targets **Jaspring 0.5.0**, which includes JNPM. The installation, JNPM, Chart.js and
 Font Awesome guides use the matching 0.5.0 Gradle plugin and libraries from Maven Central.
 
-The website itself currently runs on the **Jaspring 0.4.0** starter and Gradle plugin declared in `build.gradle`.
+The website itself currently runs on the **Jaspring 0.5.0** starter and Gradle plugin declared in `build.gradle`.
 It remains package-free and does not need a JNPM installation.
 The plugin compiles `src/main/typescript`. The site has no browser closures, so the plugin skips the WebAssembly build
 and the toolchain is not needed. `jaspring-typescript` is a `developmentOnly` dependency: `bootRun` recompiles the

@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.2'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'dev.isira.jaspring' version '0.4.0'
+    id 'dev.isira.jaspring' version '0.5.0'
 }
 
 group = 'dev.isira.jaspring'
@@ -20,21 +20,44 @@ repositories {
 }
 
 dependencies {
-    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'
+    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     // Lets bootRun recompile src/main/typescript when an IDE run skipped Gradle; not packaged.
-    developmentOnly 'dev.isira:jaspring-typescript:0.4.0'
+    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// Zipped at build time so the download always matches the starter/ sources in this repository.
+def starterArchive = tasks.register('starterArchive', Zip) {
+    archiveFileName = 'jaspring-starter.zip'
+    destinationDirectory = layout.buildDirectory.dir('starter')
+    from('starter') {
+        exclude '.gradle', 'build', '.idea', '*.iml', 'out'
+        eachFile {
+            if (it.name == 'gradlew') {
+                it.permissions { unix('rwxr-xr-x') }
+            }
+        }
+    }
+    into 'jaspring-starter'
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.named('processResources') {
+    from(starterArchive) {
+        into 'static/downloads'
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
-    jvmArgs '--enable-native-access=ALL-UNNAMED'
+    jvmArgs '--enable-native-access=ALL-UNNAMED', '--sun-misc-unsafe-memory-access=allow'
 }
 
 tasks.named('bootRun') {
-    jvmArgs '--enable-native-access=ALL-UNNAMED'
+    jvmArgs '--enable-native-access=ALL-UNNAMED', '--sun-misc-unsafe-memory-access=allow'
 }
 
 tasks.named('bootJar') {

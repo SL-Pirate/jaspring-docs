@@ -1,13 +1,18 @@
 package dev.isira.jaspring.docs;
 
 import dev.isira.jaspring.docs.services.Documentation;
+import java.io.ByteArrayInputStream;
 import java.net.CookieManager;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,7 +41,10 @@ class JaspringDocsApplicationTests {
                         assertTrue(response.body().contains("href=\"" + HtmlUtils.htmlEscape(link.href()) + "\""), link.href());
                         assertTrue(response.body().contains(HtmlUtils.htmlEscape(link.label())), link.label());
                         final var target = URI.create(link.href());
-                        assertTrue(target.getPath().startsWith("/docs/"), link.href());
+                        if (!target.getPath().startsWith("/docs/")) {
+                            assertEquals(200, get(client, target.getPath()).statusCode(), link.href());
+                            continue;
+                        }
                         final var linkedPage = documentation.find(target.getPath().substring("/docs/".length())).orElseThrow();
                         if (target.getFragment() != null) {
                             assertTrue(linkedPage.sections().stream().anyMatch(item -> item.id().equals(target.getFragment())), link.href());
@@ -82,6 +90,41 @@ class JaspringDocsApplicationTests {
             assertEquals(410, stranger.send(event, HttpResponse.BodyHandlers.ofString()).statusCode());
             assertTrue(Pattern.compile("class=\"counter-value\"[^>]*>\\s*0\\s*</div>")
                     .matcher(get(client, "/").body()).find());
+        }
+    }
+
+    @Test
+    void starterArchiveIsServedAndMatchesTheInstallationGuide() throws Exception {
+        try (final var client = HttpClient.newHttpClient()) {
+            final var response = client.send(HttpRequest.newBuilder(uri("/downloads/jaspring-starter.zip")).GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(200, response.statusCode());
+
+            final var entries = new HashMap<String, String>();
+            try (final var zip = new ZipInputStream(new ByteArrayInputStream(response.body()))) {
+                for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
+                    entries.put(entry.getName(), new String(zip.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+            for (final var file : List.of("gradlew", "gradlew.bat", "gradle/wrapper/gradle-wrapper.jar",
+                    "gradle/wrapper/gradle-wrapper.properties", "settings.gradle", "build.gradle",
+                    "src/main/java/com/example/components/CounterComponent.java",
+                    "src/main/resources/com/example/components/counter.component.html",
+                    "src/main/java/com/example/controllers/HomeController.java")) {
+                assertTrue(entries.containsKey("jaspring-starter/" + file), file);
+            }
+            assertTrue(entries.keySet().stream().noneMatch(name -> name.contains("/build/") || name.contains("/.gradle/")),
+                    entries.keySet().toString());
+
+            // The starter must not drift from the setup the Installation page teaches.
+            final var guide = documentation.find("installation").orElseThrow().sections().stream()
+                    .filter(section -> section.id().equals("gradle")).findFirst().orElseThrow().code();
+            final var version = extract("id 'dev\\.isira\\.jaspring' version '([^']+)'", guide);
+            final var starterBuild = entries.get("jaspring-starter/build.gradle");
+            assertTrue(starterBuild.contains("id 'dev.isira.jaspring' version '" + version + "'"), starterBuild);
+            assertTrue(starterBuild.contains("dev.isira:jaspring-spring-boot-starter:" + version), starterBuild);
+            assertTrue(starterBuild.contains(extract("(id 'org\\.springframework\\.boot' version '[^']+')", guide)), starterBuild);
+            assertTrue(starterBuild.contains(extract("(jvmArgs [^\\n]+)", guide)), starterBuild);
         }
     }
 

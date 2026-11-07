@@ -60,7 +60,7 @@
     "slug": "installation",
     "group": "Start here",
     "title": "Installation",
-    "description": "Set up the Gradle plugin and Spring Boot starter for your first live page, or review the limits of a Maven build.",
+    "description": "Start from the ready-made starter project, or add Jaspring to an existing Gradle or Maven application.",
     "source": "README.md",
     "sections": [
       {
@@ -75,6 +75,25 @@
         "language": "",
         "filename": "",
         "note": ""
+      },
+      {
+        "id": "starter",
+        "title": "Start from the starter project",
+        "paragraphs": [
+          "The fastest way to begin is the starter project. It is a complete Gradle application with the plugin, the Spring Boot starter, a live counter page, a test and the Gradle wrapper already set up. It uses Jaspring 0.5.0.",
+          "Download and unzip it, then run it. Open http://localhost:8080/ and click the button. Rename the com.example package to your own when you are ready.",
+          "To add Jaspring to an existing Spring Boot application instead, follow the sections below. They set up the same files by hand."
+        ],
+        "code": "unzip jaspring-starter.zip\ncd jaspring-starter\n./gradlew bootRun",
+        "language": "shell",
+        "filename": "Terminal",
+        "note": "",
+        "links": [
+          {
+            "label": "Download jaspring-starter.zip",
+            "href": "/downloads/jaspring-starter.zip"
+          }
+        ]
       },
       {
         "id": "plugin-repositories",
@@ -94,9 +113,10 @@
         "paragraphs": [
           "Add the Jaspring plugin to your existing Spring Boot plugins block, keeping the java plugin applied. The plugin type-checks and compiles src/main/typescript during the build and packages the browser scripts with the application. It also provides component generation and the optional WebAssembly build.",
           "Add the starter for the runtime and Spring Boot’s WebSocket starter for the default live transport; without WebSocket support, Jaspring uses HTTP. The optional developmentOnly compiler dependency enables the package-free TypeScript startup fallback for IDE launches that bypass Gradle.",
+          "The bootRun JVM arguments let the bundled GraalJS runtime use native access, and stop Java 25 from printing a sun.misc.Unsafe warning at startup. Add them to the test task too when your tests start the application.",
           "JNPM is included in the 0.5.0 Gradle plugin below. Follow the JNPM guide to declare browser packages, generate jnpm.lock and bundle the application."
         ],
-        "code": "plugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n    // Optional startup fallback for package-free TypeScript during development.\n    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "code": "plugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n    // Optional startup fallback for package-free TypeScript during development.\n    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED', '--sun-misc-unsafe-memory-access=allow'\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": "",
@@ -116,7 +136,7 @@
         "title": "Using Maven with limitations",
         "paragraphs": [
           "The Spring Boot starter works in a Maven application, but Maven cannot apply the Jaspring Gradle plugin. There is no equivalent Jaspring Maven build plugin. Review the limitations before choosing Maven for an application that needs TypeScript, JNPM or Java browser closures.",
-          "Use these starter dependencies in an existing Spring Boot Maven project. Configure --enable-native-access=ALL-UNNAMED for the Java process that starts the application."
+          "Use these starter dependencies in an existing Spring Boot Maven project. Configure --enable-native-access=ALL-UNNAMED and --sun-misc-unsafe-memory-access=allow for the Java process that starts the application."
         ],
         "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.5.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
         "language": "html",
