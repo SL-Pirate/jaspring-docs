@@ -139,13 +139,19 @@ class JaspringDocsApplicationTests {
     }
 
     @Test
-    void compiledSiteScriptIsInjectedAndServed() throws Exception {
+    void bundledSiteScriptIsInjectedAndLoadsShikiLazily() throws Exception {
         try (final var client = HttpClient.newHttpClient()) {
-            final var src = extract("<script type=\"module\" src=\"(/_jaspring/ts/site\\.js\\?v=[0-9a-f]{8})\"></script>",
+            final var src = extract("<script type=\"module\" src=\"(/_jaspring/ts/site-[A-Z0-9]+\\.js\\?v=[0-9a-f]{8})\"></script>",
                     get(client, "/docs/introduction").body());
             final var script = get(client, src);
             assertEquals(200, script.statusCode());
-            assertTrue(script.body().contains("new MutationObserver(syncBrowserDetails)"), script.body());
+            assertTrue(script.body().contains("MutationObserver"), script.body());
+
+            // Shiki stays out of the entry module; only its dynamic imports are referenced there.
+            final var core = extract("[\"'](\\./chunks/core-[A-Z0-9]+\\.js)[\"']", script.body());
+            final var chunk = get(client, URI.create(src).resolve(core).getPath());
+            assertEquals(200, chunk.statusCode());
+            assertTrue(chunk.body().contains("createHighlighterCore"), "the Shiki core chunk is served");
         }
     }
 

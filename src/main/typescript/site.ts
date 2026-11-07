@@ -1,9 +1,5 @@
 // Application state lives in Jaspring. This module handles browser-only details.
-interface Highlight {
-  source: string;
-  language: string;
-  html: string;
-}
+import { highlight } from "./highlight/highlighter";
 
 interface DialogState {
   el: HTMLElement;
@@ -12,54 +8,6 @@ interface DialogState {
   previousInert: boolean[];
   previousOverflow: string;
   trapFocus: (event: KeyboardEvent) => void;
-}
-
-const highlights = new WeakMap<HTMLElement, Highlight>();
-
-const keywords =
-  "public|private|protected|class|record|interface|final|var|new|return|void|import|package|static|implements|extends|if|else|true|false|null|const|let|function|implementation|repositories|dependencies|mavenCentral|plugins|id|version";
-// Kept apart so words like `type` and `of` stay plain in Java and Gradle samples.
-const scriptKeywords = `${keywords}|export|from|type|declare|async|await|readonly|undefined|of`;
-
-function codePattern(language: string): RegExp {
-  if (language === "html")
-    return /(?<comment><!--[\s\S]*?-->)|(?<tag><[!\w/][^>]*>)|(?<keyword>@(?:if|else|for|empty|switch|case|let|defer)\b)/g;
-  const words =
-    language === "typescript" || language === "javascript"
-      ? scriptKeywords
-      : keywords;
-  return new RegExp(
-    String.raw`(?<comment>\/\/[^\n]*|\/\*[\s\S]*?\*\/|^\s*#[^\n]*)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<annotation>@\w+)|(?<keyword>\b(?:${words})\b)|(?<number>\b\d+(?:\.\d+)*\b)`,
-    "gm",
-  );
-}
-
-function highlight(el: HTMLElement): void {
-  const source = el.textContent ?? "";
-  const language = el.dataset.language;
-  if (!language || language === "text") return;
-  const cached = highlights.get(el);
-  if (
-    cached?.source === source &&
-    cached.language === language &&
-    cached.html === el.innerHTML
-  )
-    return;
-
-  const fragment = document.createDocumentFragment();
-  let offset = 0;
-  for (const match of source.matchAll(codePattern(language))) {
-    const groups = match.groups ?? {};
-    fragment.append(document.createTextNode(source.slice(offset, match.index)));
-    const token = document.createElement("span");
-    token.className = `token-${Object.keys(groups).find((key) => groups[key] !== undefined)}`;
-    token.textContent = match[0];
-    fragment.append(token);
-    offset = match.index + match[0].length;
-  }
-  fragment.append(document.createTextNode(source.slice(offset)));
-  el.replaceChildren(fragment);
-  highlights.set(el, { source, language, html: el.innerHTML });
 }
 
 let dialogState: DialogState | undefined;

@@ -6,6 +6,7 @@
 !gradle/**
 !build.gradle
 !settings.gradle
+!jnpm.lock
 !src/
 !src/**
 !starter/

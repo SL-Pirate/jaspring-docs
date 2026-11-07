@@ -6,7 +6,7 @@ WORKDIR /workspace
 
 COPY --chmod=755 gradlew ./
 COPY gradle/ gradle/
-COPY build.gradle settings.gradle ./
+COPY build.gradle settings.gradle jnpm.lock ./
 RUN ./gradlew --no-daemon --console=plain dependencies
 
 COPY src/ src/

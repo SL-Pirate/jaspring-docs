@@ -19,8 +19,9 @@ Override the port when needed:
 ./gradlew bootRun --args='--server.port=9000'
 ```
 
-No Node.js installation is needed to run or package the application. The Jaspring Gradle plugin type-checks and compiles
-the browser script with its bundled TypeScript compiler.
+No Node.js installation is needed to run or package the application. The Jaspring Gradle plugin type-checks the browser
+script with its bundled TypeScript compiler, and JNPM downloads its own pinned Node/npm toolchain to install and bundle
+the browser packages. The first build needs network access for that download.
 
 ## Starter project
 
@@ -77,9 +78,11 @@ requests. Live page state belongs to one application process; use session affini
 - `src/main/resources/dev/isira/jaspring/docs/components` contains their Angular HTML templates.
 - `src/main/resources/jaspring/index.html` is the document layout. The controller inserts escaped page titles and descriptions before sending the rendered document.
 - `src/main/resources/static/site.css` contains the responsive visual system and orbital illustration.
-- `src/main/typescript/site.ts` handles syntax coloring, clipboard access, keyboard shortcuts, modal focus, and table-of-contents highlighting. Application state stays in Java.
+- `src/main/typescript/site.ts` handles clipboard access, keyboard shortcuts, modal focus, and table-of-contents highlighting. Application state stays in Java.
   Jaspring adds its compiled module to every page, so the layout does not link it. The root `tsconfig.json` gives editors the build's
-  compiler options and the `jaspring` typings; run any build once so `build/jaspring/typescript/types/` exists.
+  compiler options, the `jaspring` typings and the JNPM package declarations; run any build once so `build/jaspring/typescript/types/` exists.
+- `src/main/typescript/highlight/highlighter.ts` colors code blocks with [Shiki](https://shiki.style). Shiki and each grammar load
+  as separate chunks, only on pages that show that language. The token colors are the `--code-*` variables in `site.css`.
 
 To add a documentation page, add an entry to the catalog using an existing group: `Start here`, `Core concepts`, `Browser`, `Go further`, or `Cookbook`.
 The groups are listed in `DocsComponent`; keep catalog order matching that list, because previous/next links follow catalog order.
@@ -91,10 +94,11 @@ The documentation targets **Jaspring 0.5.0**, which includes JNPM. The installat
 Font Awesome guides use the matching 0.5.0 Gradle plugin and libraries from Maven Central.
 
 The website itself currently runs on the **Jaspring 0.5.0** starter and Gradle plugin declared in `build.gradle`.
-It remains package-free and does not need a JNPM installation.
-The plugin compiles `src/main/typescript`. The site has no browser closures, so the plugin skips the WebAssembly build
-and the toolchain is not needed. `jaspring-typescript` is a `developmentOnly` dependency: `bootRun` recompiles the
-script at startup when an IDE run skipped Gradle. It is not part of the packaged JAR.
+Its only browser package is Shiki, declared in the `jnpm` block and pinned in `jnpm.lock`. After changing the
+declaration, run `./gradlew jnpmLock` and commit the lock.
+The plugin compiles and bundles `src/main/typescript`. The site has no browser closures, so the plugin skips the WebAssembly build
+and the toolchain is not needed. `jaspring-typescript` is a `developmentOnly` dependency: at startup it reports a stale
+bundle when an IDE run skipped Gradle. It is not part of the packaged JAR.
 
 Framework repository: [SL-Pirate/jaspring](https://github.com/SL-Pirate/jaspring).
 Source and license links use its `master` branch.

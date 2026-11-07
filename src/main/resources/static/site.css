@@ -30,6 +30,12 @@
   --purple: #c2b0f5;
   --mono: Code, "Courier New", monospace;
   --sans: Display, Arial, sans-serif;
+  --code-keyword: #c5b0f5;
+  --code-string: #c9e693;
+  --code-comment: #78866c;
+  --code-number: #eab49a;
+  --code-tag: #c4fa78;
+  --code-attribute: #e8cf96;
 }
 * {
   box-sizing: border-box;
@@ -828,22 +834,6 @@ kbd {
 .mini-branch {
   color: var(--acid);
   font-size: 18px;
-}
-.token-keyword {
-  color: #c5b0f5;
-}
-.token-string {
-  color: #c9e693;
-}
-.token-comment {
-  color: #78866c;
-}
-.token-number {
-  color: #eab49a;
-}
-.token-annotation,
-.token-tag {
-  color: #c4fa78;
 }
 .familiar-section {
   padding-top: 126px;

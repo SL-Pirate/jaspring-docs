@@ -28,6 +28,10 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+jnpm {
+    implementation("shiki:4.5.0")
+}
+
 // Zipped at build time so the download always matches the starter/ sources in this repository.
 def starterArchive = tasks.register('starterArchive', Zip) {
     archiveFileName = 'jaspring-starter.zip'
