@@ -21,6 +21,8 @@ COPY --from=build --chown=10001:10001 /workspace/build/libs/jaspring-docs.jar ./
 
 USER 10001:10001
 ENV SERVER_PORT=8095
+# User 10001 has no home directory; runtime caches go to the writable directory created above.
+ENV XDG_CACHE_HOME=/app/.cache
 EXPOSE 8095
 STOPSIGNAL SIGTERM
 
