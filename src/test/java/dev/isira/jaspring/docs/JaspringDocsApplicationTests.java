@@ -32,6 +32,16 @@ class JaspringDocsApplicationTests {
                 assertTrue(response.body().contains("<title>" + HtmlUtils.htmlEscape(page.title() + " — Jaspring") + "</title>"));
                 for (final var section : page.sections()) {
                     assertTrue(response.body().contains("id=\"" + section.id() + "\""), section.id());
+                    for (final var link : section.links()) {
+                        assertTrue(response.body().contains("href=\"" + HtmlUtils.htmlEscape(link.href()) + "\""), link.href());
+                        assertTrue(response.body().contains(HtmlUtils.htmlEscape(link.label())), link.label());
+                        final var target = URI.create(link.href());
+                        assertTrue(target.getPath().startsWith("/docs/"), link.href());
+                        final var linkedPage = documentation.find(target.getPath().substring("/docs/".length())).orElseThrow();
+                        if (target.getFragment() != null) {
+                            assertTrue(linkedPage.sections().stream().anyMatch(item -> item.id().equals(target.getFragment())), link.href());
+                        }
+                    }
                 }
             }
         }
@@ -106,6 +116,10 @@ class JaspringDocsApplicationTests {
                 .anyMatch(page -> page.slug().equals("client-hooks")));
         assertTrue(documentation.search("compileTypescript").stream()
                 .anyMatch(page -> page.slug().equals("typescript")));
+        assertTrue(documentation.search("jnpm.lock").stream()
+                .anyMatch(page -> page.slug().equals("jnpm")));
+        assertTrue(documentation.search("@fortawesome/fontawesome-free").stream()
+                .anyMatch(page -> page.slug().equals("font-awesome")));
         assertTrue(documentation.search("no-such-jaspring-api").isEmpty());
         assertEquals(documentation.pages(), documentation.search(" "));
     }

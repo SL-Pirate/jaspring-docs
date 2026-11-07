@@ -1295,6 +1295,11 @@ kbd {
   color: #a5af99;
   margin-bottom: 17px;
 }
+.doc-section .doc-link {
+  color: var(--acid);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .doc-code-block {
   border: 1px solid var(--line);
   background: #151a11;

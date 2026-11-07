@@ -45,8 +45,9 @@
         "id": "project-status",
         "title": "Growing in the open",
         "paragraphs": [
-          "Jaspring 0.4.0 is experimental and MIT licensed. The published starter includes server rendering, live events, signals, change detection, and the browser APIs: client hooks, browser calls, and Java browser closures compiled to WebAssembly. Browser scripts can be written in TypeScript and are compiled without Node.js. Static generation and incremental regeneration are future work.",
-          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.4.0 release."
+          "Jaspring 0.5.0 is experimental and MIT licensed. The starter includes server rendering, live events, signals, change detection, and the browser APIs: client hooks, browser calls, and Java browser closures compiled to WebAssembly. Browser scripts can be written in TypeScript. Static generation and incremental regeneration are future work.",
+          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets Jaspring 0.5.0.",
+          "JNPM is included in Jaspring 0.5.0. Declare browser npm dependencies in Gradle and build them with package typings, bundling and ESLint. The JNPM, Chart.js and Font Awesome guides use the release artifacts from Maven Central."
         ],
         "code": "",
         "language": "",
@@ -59,7 +60,7 @@
     "slug": "installation",
     "group": "Start here",
     "title": "Installation",
-    "description": "One starter brings Jaspring into your Spring Boot application. Your first live page is a few files away.",
+    "description": "Set up the Gradle plugin and Spring Boot starter for your first live page, or review the limits of a Maven build.",
     "source": "README.md",
     "sections": [
       {
@@ -67,7 +68,8 @@
         "title": "Before you begin",
         "paragraphs": [
           "Use Java 25 and Spring Boot 4.1.x. Oracle GraalVM 25.2.4 matches the bundled GraalJS runtime and enables optimized startup compilation. Other Java 25 distributions work with the interpreter and can start more slowly.",
-          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler, the styling tools, and the TypeScript compiler are already bundled in the framework. Browser scripts in TypeScript need the Jaspring Gradle plugin, covered in TypeScript. Java browser closures are optional and have extra build requirements, covered in WebAssembly build."
+          "Use Gradle for the supported TypeScript build and JNPM workflow. Apply the Jaspring plugin alongside the Spring Boot starter: the plugin provides build tooling, while the starter provides the application runtime. Keep their Jaspring versions aligned.",
+          "You do not need to install Node.js, npm or Angular CLI yourself. The Angular, styling and TypeScript compilers are bundled; JNPM manages Node/npm automatically at build time when npm packages are declared. Java browser closures are optional and have extra requirements, covered in WebAssembly build."
         ],
         "code": "",
         "language": "",
@@ -75,26 +77,57 @@
         "note": ""
       },
       {
-        "id": "gradle",
-        "title": "Add the Gradle dependency",
+        "id": "plugin-repositories",
+        "title": "Resolve the Gradle plugin",
         "paragraphs": [
-          "Add Maven Central and the Jaspring starter to an existing Spring Boot application. Add Spring Boot’s WebSocket starter for the default live transport; without it, Jaspring uses HTTP."
+          "The Jaspring Gradle plugin and its marker are published to Maven Central. Add Maven Central to pluginManagement.repositories in settings.gradle; the repositories block in build.gradle only resolves library dependencies.",
+          "Keep pluginManagement as the first block in settings.gradle. If it already exists, merge these repositories into it."
         ],
-        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "code": "pluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}",
         "language": "gradle",
-        "filename": "build.gradle",
+        "filename": "settings.gradle",
         "note": ""
       },
       {
-        "id": "maven",
-        "title": "Using Maven",
+        "id": "gradle",
+        "title": "Apply the plugin and add the starter",
         "paragraphs": [
-          "Use the same starter coordinates in your Spring Boot Maven project. Configure native access for the Java process that starts the application."
+          "Add the Jaspring plugin to your existing Spring Boot plugins block, keeping the java plugin applied. The plugin type-checks and compiles src/main/typescript during the build and packages the browser scripts with the application. It also provides component generation and the optional WebAssembly build.",
+          "Add the starter for the runtime and Spring Boot’s WebSocket starter for the default live transport; without WebSocket support, Jaspring uses HTTP. The optional developmentOnly compiler dependency enables the package-free TypeScript startup fallback for IDE launches that bypass Gradle.",
+          "JNPM is included in the 0.5.0 Gradle plugin below. Follow the JNPM guide to declare browser packages, generate jnpm.lock and bundle the application."
         ],
-        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.4.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
+        "code": "plugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n    // Optional startup fallback for package-free TypeScript during development.\n    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": "",
+        "links": [
+          {
+            "label": "TypeScript build and editor setup",
+            "href": "/docs/typescript"
+          },
+          {
+            "label": "JNPM installation",
+            "href": "/docs/jnpm#requirements"
+          }
+        ]
+      },
+      {
+        "id": "maven",
+        "title": "Using Maven with limitations",
+        "paragraphs": [
+          "The Spring Boot starter works in a Maven application, but Maven cannot apply the Jaspring Gradle plugin. There is no equivalent Jaspring Maven build plugin. Review the limitations before choosing Maven for an application that needs TypeScript, JNPM or Java browser closures.",
+          "Use these starter dependencies in an existing Spring Boot Maven project. Configure --enable-native-access=ALL-UNNAMED for the Java process that starts the application."
+        ],
+        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.5.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
         "language": "html",
         "filename": "pom.xml",
-        "note": ""
+        "note": "",
+        "links": [
+          {
+            "label": "Maven build limitations",
+            "href": "/docs/compatibility#maven-limitations"
+          }
+        ]
       },
       {
         "id": "create-a-component",
@@ -589,7 +622,8 @@
         "title": "Scripts reach the page by themselves",
         "paragraphs": [
           "Every top-level file in src/main/typescript gets a <script type=\"module\"> tag after the client runtime, so you do not edit the layout. Module scripts are deferred, so window.jaspring exists when they run, wherever they stand in the document.",
-          "Plain JavaScript still works. Put it under src/main/resources/static and link it from the layout, src/main/resources/jaspring/index.html, with type=\"module\" or defer."
+          "Plain JavaScript still works. Put it under src/main/resources/static and link it from the layout, src/main/resources/jaspring/index.html, with type=\"module\" or defer.",
+          "JNPM also bundles imported npm packages and their assets. Its entrypoints still load after the runtime, so the hook lifecycle stays the same. See JNPM and Third-party JavaScript for the package setup."
         ],
         "code": "<body>\n  <app-root>…</app-root>\n  <script src=\"/_jaspring/idiomorph.min.js\"></script>\n  <script src=\"/_jaspring/jaspring.js\" data-jsp-page=\"…\" data-jsp-transport=\"websocket\"></script>\n  <script type=\"module\" src=\"/_jaspring/ts/sparkline.js?v=574f4503\"></script>\n</body>",
         "language": "html",
@@ -671,7 +705,7 @@
     "slug": "typescript",
     "group": "Browser",
     "title": "TypeScript",
-    "description": "Write hooks and page functions in TypeScript. The Gradle plugin type-checks and compiles them without Node.js, and the page loads them by itself.",
+    "description": "Write hooks and page functions in TypeScript. The Gradle plugin checks the sources and the page loads them automatically; JNPM adds npm packages and bundling.",
     "source": "docs/typescript.md",
     "sections": [
       {
@@ -684,16 +718,16 @@
         "code": "src/main/typescript/\n  sparkline.ts      entry point  → /_jaspring/ts/sparkline.js\n  app.ts            entry point  → /_jaspring/ts/app.js\n  lib/bars.ts       module, reached through imports\n  chart.d.ts        global types, emits nothing",
         "language": "text",
         "filename": "Project layout",
-        "note": ""
+        "note": "The unbundled URLs below describe package-free applications. JNPM emits hashed entrypoints and shared chunks; see the JNPM guide."
       },
       {
         "id": "set-up",
         "title": "Set up the build",
         "paragraphs": [
           "Apply the Jaspring Gradle plugin with the same version as the starter. It bundles TypeScript 6.0.3 and runs it in GraalJS inside a Gradle worker, so there is nothing to install.",
-          "The developmentOnly dependency is optional. It lets bootRun recompile sources that the build has not seen, described below under Startup fallback. It is not part of the packaged application."
+          "The developmentOnly dependency is optional. In a package-free application it enables the source-only startup fallback described below. JNPM applications build before launch; their development compiler detects stale bundles instead of rebuilding packages at startup. The dependency is not part of the packaged application."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.4.0'\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    developmentOnly 'dev.isira:jaspring-typescript:0.4.0'\n}",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'\n    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'\n}",
         "language": "gradle",
         "filename": "Gradle setup",
         "note": ""
@@ -702,7 +736,7 @@
         "id": "entry-points-and-modules",
         "title": "Entry points and modules",
         "paragraphs": [
-          "Every .ts file is compiled, and nested paths are kept. Top-level files are entry points and get a script tag in the page. Files in subdirectories are modules that entry points import. Import them with the .js extension, as in any ES module project; a .ts extension is accepted and rewritten.",
+          "Top-level .ts files are entrypoints and get script tags in the page. Files in subdirectories are supporting modules. Without JNPM, each file is emitted separately and nested paths are kept; import siblings with a .js extension, or a .ts extension that the compiler rewrites. With JNPM, entrypoints and imported packages are bundled, and shared modules become shared chunks.",
           "The jaspring global is typed everywhere. Its types are also importable from \"jaspring\": Hook, HookContext, CallFn, and Global. The typings come from the client runtime's own source, so they match what runs."
         ],
         "code": "// src/main/typescript/lib/bars.ts — a module, no script tag\nexport function drawBars(el: HTMLCanvasElement, points: number[]): void {\n  /* canvas drawing */\n}\n\n// src/main/typescript/bars-hook.ts — an entry point\nimport type { Hook } from \"jaspring\";\nimport { drawBars } from \"./lib/bars.js\";\n\nconst bars: Hook<HTMLCanvasElement, number[]> = {\n  mounted: (el, ctx) => drawBars(el, ctx.params),\n  updated: (el, ctx) => drawBars(el, ctx.params),\n};\n\njaspring.hooks.register(\"bars\", bars);",
@@ -725,7 +759,7 @@
         "id": "build-tasks",
         "title": "The build tasks",
         "paragraphs": [
-          "Two tasks run before processResources. Projects without src/main/typescript skip both, and the compiler is not even resolved.",
+          "For package-free applications, extractTypescriptTypes and compileTypescript run before processResources. Projects without TypeScript sources skip compilation. JNPM also installs the lock and prepares package declarations before compilation, then bundles the checked sources; check includes ESLint.",
           "A GraalVM JDK makes the compiler several times faster. The plugin uses GRAALVM_HOME, or the JDK running Gradle when it is GraalVM. On GraalVM 25, loading the compiler takes about 3 seconds and a type-checked compile of a few files about 6 seconds; a warm compile takes under 1 second. Gradle's worker daemons keep it warm between builds, and the task is cached like any other."
         ],
         "code": "extractTypescriptTypes   jaspring.d.ts and tsconfig.base.json\n                         → build/jaspring/typescript/types/\ncompileTypescript        type-check and compile src/main/typescript\n                         → jaspring/ts/**/*.js and jaspring/jaspring-typescript.json\n                           in the application's resources",
@@ -760,7 +794,8 @@
         "id": "editor",
         "title": "Set up the editor",
         "paragraphs": [
-          "Add a tsconfig.json to the project root. IntelliJ IDEA and VS Code then check the sources with the build's options and the jaspring typings. Run any build, or ./gradlew extractTypescriptTypes, once so the extended file exists."
+          "Add a tsconfig.json to the project root. IntelliJ IDEA and VS Code then check the sources with the build's options and the jaspring typings. Run any build, or ./gradlew extractTypescriptTypes, once so the extended file exists.",
+          "JNPM applications extend build/jaspring/typescript/types/tsconfig.jnpm.json instead. Run prepareJnpmTypes first to expose the installed package declarations. Its IntelliJ integration also supplies ESLint diagnostics for unsaved text."
         ],
         "code": "{\n  \"extends\": \"./build/jaspring/typescript/types/tsconfig.base.json\",\n  \"include\": [\n    \"src/main/typescript/**/*.ts\",\n    \"build/jaspring/typescript/types/jaspring.d.ts\"\n  ]\n}",
         "language": "json",
@@ -772,7 +807,8 @@
         "title": "How scripts reach the page",
         "paragraphs": [
           "/_jaspring/ts/** serves the compiled files with a one-hour cache, or no-cache in dev mode. The layout gets one tag per entry point after the client runtime. The source digest is in the URL, so browsers fetch a new build at once.",
-          "Module scripts are deferred, so they run after the classic jaspring.js tag and jaspring is always defined. The tags are added only together with the runtime: with jaspring.live.transport=off there is no runtime and no page scripts. Scripts linked by hand in the layout keep working; they must be type=\"module\" or placed after the runtime."
+          "Module scripts are deferred, so they run after the classic jaspring.js tag and jaspring is always defined. The tags are added only together with the runtime: with jaspring.live.transport=off there is no runtime and no page scripts. Scripts linked by hand in the layout keep working; they must be type=\"module\" or placed after the runtime.",
+          "JNPM changes entry filenames to include content hashes and also serves shared chunks, CSS and referenced assets. Bundle styles are linked once in the head; only entry modules receive script tags."
         ],
         "code": "<script src=\"/_jaspring/jaspring.js\" data-jsp-page=\"…\" data-jsp-transport=\"websocket\"></script>\n<script type=\"module\" src=\"/_jaspring/ts/sparkline.js?v=574f4503\"></script>",
         "language": "html",
@@ -783,20 +819,20 @@
         "id": "startup-fallback",
         "title": "Startup fallback",
         "paragraphs": [
-          "The build's manifest records a digest per source file. With dev.isira:jaspring-typescript on the runtime classpath, the starter compares it at startup with src/main/typescript next to the working directory, or with classpath:/typescript/ when that directory is absent. It compiles when the manifest is missing or stale: an IDE run that bypassed Gradle, or a build without the plugin. The result is served from memory.",
+          "For applications without JNPM, the build's manifest records a digest per source file. With dev.isira:jaspring-typescript on the runtime classpath, the starter compares it at startup with src/main/typescript next to the working directory, or with classpath:/typescript/ when that directory is absent. It compiles when the manifest is missing or stale: an IDE run that bypassed Gradle, or a build without the plugin. The result is served from memory.",
           "Compile errors fail startup, like a template that Angular rejects. A packaged application has no sources, so its manifest stands and nothing runs. In Maven, use the runtime scope for the dependency."
         ],
         "code": "jaspring:\n  typescript:\n    enabled: true            # the fallback at all\n    type-check: true         # false transpiles without checking\n    source-dir: src/main/typescript\n    host: graaljs            # or node",
         "language": "yaml",
         "filename": "application.yaml · defaults",
-        "note": ""
+        "note": "JNPM requires a frontend build before launch. Its development startup checks reject stale or missing bundles and never run npm or esbuild. Run ./gradlew compileTypescript, or use bootRun or the IntelliJ before-run task."
       },
       {
         "id": "limits",
         "title": "Limits",
         "paragraphs": [
-          "Spring devtools does not watch .ts files. After editing one, run ./gradlew compileTypescript or restart the application. An IDE that delegates builds to Gradle does this when you build.",
-          "There is no bundling and no npm imports: a script may import only its sibling modules. Load third-party libraries with a script tag in the layout and type them with a local .d.ts, as shown in Third-party JavaScript.",
+          "Spring devtools does not watch .ts files. Run ./gradlew compileTypescript after editing them. Package-free applications can also use their startup fallback; JNPM applications must rebuild before restarting.",
+          "Without JNPM, scripts import sibling modules and external scripts need local declarations. JNPM adds npm imports, package typings and bundling. Node/OS APIs remain unsupported in browser code; imports such as fs fail the JNPM build, including transitive imports.",
           "TypeScript 6 is the last JavaScript release of the compiler; 7.x is a native binary. Language features after the 6.x line would need a native host. A JVM without GraalVM's optimizing compiler runs the compiler interpreted, about twice as slow on a cold start, and the build says so. host = NODE avoids that where Node is installed."
         ],
         "code": "",
@@ -807,57 +843,257 @@
     ]
   },
   {
+    "slug": "jnpm",
+    "group": "Browser",
+    "title": "JNPM",
+    "description": "Declare npm browser packages in Gradle, lock their versions, and bundle JavaScript, CSS and assets during the build. Included in Jaspring 0.5.0.",
+    "source": "docs/jnpm.md",
+    "sections": [
+      {
+        "id": "browser-packages",
+        "title": "Browser packages, declared in Gradle",
+        "paragraphs": [
+          "JNPM means Java npm. Add a top-level jnpm block to build.gradle or build.gradle.kts. Java owns the Gradle workflow, npm resolves the packages, and esbuild bundles them for the browser. No project package.json or separate npm install command is needed.",
+          "The generated package.json, package-lock.json and node_modules all live under build/. Each application module owns its jnpm.lock beside build.gradle. Commit that lock with the declarations."
+        ],
+        "code": "jnpm {\n    implementation(\"nanoid:5.1.6\")\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": "This guide requires the Jaspring 0.5.0 Gradle plugin and matching starter. Follow Installation for the Maven Central setup."
+      },
+      {
+        "id": "requirements",
+        "title": "Use Jaspring 0.5.0",
+        "paragraphs": [
+          "JNPM is included in the Jaspring 0.5.0 Gradle plugin. Resolve the plugin and libraries from Maven Central and keep the plugin, starter and any explicit jaspring-typescript dependency on the same version.",
+          "The application needs Java 25. JNPM downloads its checksum-pinned Node/npm toolchain at build time. Node and npm are not required on the production server."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "",
+        "links": [
+          {
+            "label": "Complete installation guide",
+            "href": "/docs/installation#plugin-repositories"
+          }
+        ]
+      },
+      {
+        "id": "gradle-setup",
+        "title": "Use matching Gradle dependencies",
+        "paragraphs": [
+          "Add Maven Central to both plugin repositories and library repositories, then apply the matching Jaspring release. This example uses Groovy; the jnpm dependency methods also work in Kotlin DSL."
+        ],
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.5.0'\n    developmentOnly 'dev.isira:jaspring-typescript:0.5.0'\n}",
+        "language": "gradle",
+        "filename": "Local snapshot configuration",
+        "note": ""
+      },
+      {
+        "id": "dependency-scopes",
+        "title": "Choose the dependency scope",
+        "paragraphs": [
+          "implementation supplies browser runtime JavaScript and any typings included by the package. api supplies additional declarations, such as @types packages. It does not export dependencies to other Gradle projects as Java’s api configuration does.",
+          "devImplementation supplies development tools, and devApi supplies their declarations. These development scopes are excluded from application imports and browser bundles. Node-based tools can run during the build; application packages must work in the browser.",
+          "Use package:version or package:semver-range, including scoped package names. Declare a package in one scope only. Runtime imports require a direct implementation declaration; type-only imports may also use api. An undeclared transitive package is not an application import."
+        ],
+        "code": "jnpm {\n    implementation(\"nanoid:5.1.6\")\n    implementation(\"lodash-es:^4.17.21\")\n    api(\"@types/lodash-es:^4.17.12\")\n    devImplementation(\"prettier:3.6.2\")\n    devApi(\"@types/node:^22\")\n}",
+        "language": "gradle",
+        "filename": "The four JNPM scopes",
+        "note": ""
+      },
+      {
+        "id": "lock-and-build",
+        "title": "Lock, install and build",
+        "paragraphs": [
+          "Run jnpmLock after adding or changing declarations, then commit jnpm.lock. It reconciles the declarations while retaining compatible locked versions. jnpmUpdate explicitly refreshes packages within the declared ranges.",
+          "Normal builds install the exact lock with npm ci. A missing or mismatched lock fails with instructions to run jnpmLock; a normal build never rewrites the committed lock. Use qualified tasks such as :app:jnpmLock in a multi-project build.",
+          "clean removes build/node_modules and generated metadata. The managed toolchain and npm download cache survive under Gradle’s user cache. After the dependencies have been cached, --offline can reinstall them following clean. A cache miss fails instead of downloading."
+        ],
+        "code": "./gradlew jnpmLock\n# Commit build.gradle and jnpm.lock.\n./gradlew build\n\n# Later, deliberately refresh versions within the ranges:\n./gradlew jnpmUpdate\n\n# After an online build has populated the cache:\n./gradlew clean build --offline",
+        "language": "shell",
+        "filename": "Dependency workflow",
+        "note": ""
+      },
+      {
+        "id": "tasks",
+        "title": "The JNPM tasks",
+        "paragraphs": [
+          "compileTypescript prepares the installation and declarations before checking and bundling. check and build also run lintTypescript. fixTypescript is an explicit source-changing operation; normal linting only reports diagnostics."
+        ],
+        "code": "jnpmLock           create or reconcile jnpm.lock\njnpmUpdate         refresh locked versions within the ranges\njnpmInstall        install the exact lock into build/node_modules\nprepareJnpmTypes   prepare declarations, editor config and IDE metadata\ncompileTypescript  type-check and bundle browser entrypoints\nlintTypescript     report ESLint diagnostics; included in check\nfixTypescript      apply ESLint fixes to source files",
+        "language": "text",
+        "filename": "Gradle tasks",
+        "note": ""
+      },
+      {
+        "id": "import-packages",
+        "title": "Import a package from TypeScript",
+        "paragraphs": [
+          "Keep entrypoints directly under src/main/typescript and supporting modules in subdirectories. Import npm packages by name. Typings shipped by implementation packages are discovered automatically; add an api dependency when a package needs separate declarations.",
+          "Public exports, supported subpaths and browser entrypoints are resolved from the installed packages. ESM and CommonJS dependencies are supported. The compiler checks the TypeScript, then esbuild emits minified ES2022 modules and shared chunks with hashed names."
+        ],
+        "code": "import { nanoid } from \"nanoid\";\n\njaspring.calls.register(\"newId\", () => nanoid());",
+        "language": "typescript",
+        "filename": "src/main/typescript/app.ts",
+        "note": ""
+      },
+      {
+        "id": "browser-only",
+        "title": "Browser APIs only",
+        "paragraphs": [
+          "Application packages run in the browser. Imports of fs, node:fs, path, net, child_process and other Node/OS APIs fail the build, including imports inside dependencies. JNPM does not add Node polyfills.",
+          "A package with separate browser and Node entrypoints can work when its selected browser implementation avoids those APIs. Installing a package successfully does not establish browser compatibility; the bundle must also build.",
+          "ESLint and other development tools run in the managed Node process during the build and never enter the application bundle. Dependency lifecycle scripts are disabled. Packages that need postinstall compilation or native Node addons are unsupported."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "assets",
+        "title": "Ship CSS, fonts and other assets",
+        "paragraphs": [
+          "Import CSS and static assets from a browser entrypoint. JNPM emits CSS, referenced fonts and images, JSON imports and literal dynamic imports with the browser build. CSS url() references are rewritten to emitted asset paths.",
+          "Jaspring loads bundle styles once in the page head and adds entry modules after its client runtime. Bundle CSS loads eagerly. JavaScript chunks, source maps, assets, license notices and the manifest are packaged in the JAR; node_modules and the build tools are not.",
+          "Failed type checking or bundling leaves the previous successful bundle in place. A successful rebuild removes obsolete chunks. The Font Awesome cookbook shows a package stylesheet and its fonts going through this pipeline."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "editor",
+        "title": "Set up TypeScript completion",
+        "paragraphs": [
+          "Run prepareJnpmTypes, then extend tsconfig.jnpm.json from the project’s tsconfig.json. The generated configuration maps public package imports to installed declarations and includes the jaspring typings.",
+          "A separate tool or test tsconfig can extend tsconfig.jnpm.dev.json to include development scopes. Browser sources do not automatically receive Node globals. Avoid blanket paths aliases into build/node_modules; the generated declaration mappings are for the editor."
+        ],
+        "code": "{\n  \"extends\": \"./build/jaspring/typescript/types/tsconfig.jnpm.json\",\n  \"include\": [\"src/main/typescript/**/*.ts\"]\n}",
+        "language": "json",
+        "filename": "tsconfig.json",
+        "note": ""
+      },
+      {
+        "id": "eslint",
+        "title": "Lint the browser sources",
+        "paragraphs": [
+          "ESLint is enabled by default, using the recommended JavaScript and TypeScript ESLint rules with browser globals and jaspring. Errors fail check; warnings are reported. The JSON report is written to build/reports/jnpm/eslint.json.",
+          "An optional eslint.config.mjs at the application root replaces the defaults. Its imports resolve against build/node_modules. Declare additional compatible ESLint plugins in devImplementation. JNPM pins ESLint, its standard config, TypeScript ESLint, TypeScript, esbuild and globals; conflicting overrides are rejected.",
+          "To disable linting, use jnpm { lint { enabled.set(false) } } and reconcile the lock after changing the generated tool dependencies."
+        ],
+        "code": "import js from \"@eslint/js\";\nimport ts from \"typescript-eslint\";\nimport globals from \"globals\";\n\nexport default [\n  js.configs.recommended,\n  ...ts.configs.recommended,\n  { languageOptions: { globals: { ...globals.browser, jaspring: \"readonly\" } } },\n  { rules: { \"@typescript-eslint/no-explicit-any\": \"off\" } },\n];",
+        "language": "javascript",
+        "filename": "eslint.config.mjs · optional",
+        "note": ""
+      },
+      {
+        "id": "intellij",
+        "title": "Use the IntelliJ integration",
+        "paragraphs": [
+          "Build the Jaspring IntelliJ plugin from the same framework checkout. With Gradle support enabled, sync imports the JNPM model, registers package roots as libraries and runs prepareJnpmTypes. Application run configurations receive a compileTypescript before-run task.",
+          "With JavaScript/TypeScript support installed, the plugin runs managed ESLint against unsaved editor text and offers diagnostics and fixes. It uses the same ESLint configuration as the Gradle task.",
+          "Tools → JNPM provides Prepare Dependencies, Reconcile Dependency Lock and Update Dependencies. Reconcile a missing lock explicitly; sync does not create it. After clean, prepare dependencies again. Template features still work without the optional Gradle and JavaScript integrations."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "startup",
+        "title": "Build before starting the application",
+        "paragraphs": [
+          "JNPM packages are never installed or bundled at application startup. bootRun and the IntelliJ integration build the frontend before launching. Other launch paths must run compileTypescript first.",
+          "With jaspring-typescript present for development, missing or stale JNPM bundles produce an instruction to build. Startup checks the sources, referenced assets and lockfile against the manifest. Package-free applications keep the existing source-only startup compiler."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      },
+      {
+        "id": "registries",
+        "title": "Use a private registry",
+        "paragraphs": [
+          "Configure registries in Gradle. A scoped registry serves its listed scopes; a registry without scopes replaces npmjs.org. Names use letters, digits and underscores, and scopes must be unique.",
+          "URLs use HTTPS, except for loopback test registries. Supply bearer tokens through Gradle providers, normally from environment variables. Generated npm configuration contains environment-variable references, not token values. User and global npm configuration are not inherited."
+        ],
+        "code": "jnpm {\n    registries {\n        create(\"company\") {\n            url.set(uri(\"https://npm.example.com/\"))\n            scopes.add(\"@company\")\n            token.set(providers.environmentVariable(\"COMPANY_NPM_TOKEN\"))\n        }\n    }\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "limits",
+        "title": "Toolchain and current limits",
+        "paragraphs": [
+          "The managed default is a checksum-pinned Node 22.23.1 distribution. Linux, macOS and Windows on x64 and ARM64 have configured distributions. To use a centrally managed distribution, set jnpm.nodeHome or -Pjnpm.nodeHome=/path/to/node. It must contain npm and Node 22.15+ on the 22.x line, or Node 24+.",
+          "The first implementation accepts registry packages with exact versions or semver ranges. Dist-tags, Git, file, URL and workspace dependencies are unsupported. JSX setup, HMR, npm publishing and JavaScript test execution remain separate work."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": ""
+      }
+    ]
+  },
+  {
     "slug": "third-party-libraries",
     "group": "Browser",
     "title": "Third-party JavaScript",
-    "description": "Use browser libraries such as Chart.js with Jaspring. Load them in the layout, type them, and wrap them in a client hook.",
+    "description": "Install a browser library through JNPM and wrap it in a typed client hook. This guide uses Chart.js with bundled declarations.",
     "source": "docs/events.md",
     "sections": [
       {
         "id": "the-pattern",
         "title": "The pattern",
         "paragraphs": [
-          "Jaspring does not bundle JavaScript, so a browser library is used the same way as on any server-rendered page. Load it in the layout. Declare the parts you use in a local .d.ts file. Wrap it in a TypeScript client hook and mark its element with data-jsp-ignore. Send data with hook parameters, send user actions back with ctx.pushEvent, and let Java ask for results with browser calls.",
-          "This page builds a Chart.js bar chart. The same steps work for maps, editors, and date pickers."
+          "Declare the library in jnpm, lock it and import it from TypeScript. Jaspring bundles the library with the hook and adds the entry script automatically. Package typings are discovered during the build.",
+          "This page builds a Chart.js bar chart. Keep widget state in a client hook, preserve its element with data-jsp-ignore, pass data through hook parameters, and send user actions to Java with ctx.pushEvent."
         ],
-        "code": "1. Add the library    WebJar, CDN, or a file under static/\n2. Load it            <script defer> in jaspring/index.html\n3. Type it            src/main/typescript/chart.d.ts\n4. Wrap it            jaspring.hooks.register(\"chart\", ...)\n5. Feed it            [attr.data-jsp-hook-params]=\"data | json\"\n6. Listen             ctx.pushEvent → (event)=\"handler()\"\n7. Ask it             Browser.current().call(\"chart.method\")",
+        "code": "1. Declare the library   jnpm { implementation(\"chart.js:4.6.1\") }\n2. Lock the dependency   ./gradlew jnpmLock; commit jnpm.lock\n3. Import and wrap it    src/main/typescript/chart-hook.ts\n4. Build it              ./gradlew build\n5. Feed it               [attr.data-jsp-hook-params]=\"data | json\"\n6. Listen                ctx.pushEvent → (event)=\"handler()\"\n7. Ask it                Browser.current().call(\"chart.total\")",
         "language": "text",
         "filename": "Steps",
-        "note": ""
+        "note": "This guide requires the Jaspring 0.5.0 Gradle plugin and matching starter. Follow Installation for the Maven Central setup."
       },
       {
         "id": "add-the-library",
         "title": "Add the library",
         "paragraphs": [
-          "A WebJar puts the library on the classpath, and Spring Boot serves it under /webjars/. Gradle manages the version, and the page does not depend on a CDN at run time. Add webjars-locator-lite to use URLs without the version number.",
-          "A CDN link or a copied file under src/main/resources/static works too. Pick one and keep the layout as the single place that loads browser libraries."
+          "Add Chart.js as a browser implementation dependency. Its npm package includes TypeScript declarations, so this example needs no api dependency. JNPM installs the package under build/node_modules.",
+          "Run ./gradlew jnpmLock after adding the declaration and commit jnpm.lock. Later builds use that exact graph. Use ./gradlew jnpmUpdate when you deliberately want to refresh a ranged dependency."
         ],
-        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.webjars.npm:chart.js:4.6.1'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "code": "jnpm {\n    implementation(\"chart.js:4.6.1\")\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
       },
       {
         "id": "load-it",
-        "title": "Load it in the layout",
+        "title": "Import the browser entrypoint",
         "paragraphs": [
-          "Load the library with defer. The hook script needs no tag: Jaspring adds a module script for src/main/typescript/chart-hook.ts at the end of the body. Deferred and module scripts run in document order after the page is parsed, so Chart exists when the hook registers, and so does the Jaspring runtime."
+          "Import Chart from chart.js/auto in the hook module. This entrypoint registers Chart.js’s chart types, scales and plugins. JNPM bundles it with the application and Jaspring injects the module after its client runtime.",
+          "The import is included in the complete hook below. Keep one top-level chart-hook.ts entrypoint; supporting helpers belong in subdirectories. Remove any older Chart script tag to avoid loading another copy."
         ],
-        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>Sales</title>\n  <script src=\"/webjars/chart.js/dist/chart.umd.min.js\" defer></script>\n</head>\n<body>\n  <app-root></app-root>\n</body>",
-        "language": "html",
-        "filename": "src/main/resources/jaspring/index.html",
+        "code": "import Chart from \"chart.js/auto\";",
+        "language": "typescript",
+        "filename": "src/main/typescript/chart-hook.ts",
         "note": ""
       },
       {
         "id": "type-it",
-        "title": "Type the library",
+        "title": "Use the package declarations",
         "paragraphs": [
-          "The compiler does not read npm packages, so the library's own typings are not available. Declare the parts you use in a .d.ts file under src/main/typescript. It adds global types and emits nothing.",
-          "Keep it small and grow it with your code. A wrong declaration is not checked against the library, so copy signatures from its documentation."
+          "Run ./gradlew prepareJnpmTypes and extend the generated JNPM configuration. The compiler and editor can then resolve Chart.js’s public exports and declarations.",
+          "Remove the local chart.d.ts used by a previous global-script setup. The hook imports the real Chart class and uses Chart<\"bar\", number[], string> for numeric bar data. For libraries with separate typings, declare their @types package in api."
         ],
-        "code": "// The parts of Chart.js this application uses. The UMD build defines a global Chart.\ninterface ChartData {\n  labels: string[];\n  datasets: { label: string; data: number[] }[];\n}\n\ninterface ChartOptions {\n  maintainAspectRatio?: boolean;\n  onClick?: (event: unknown, elements: { index: number }[]) => void;\n}\n\ndeclare class Chart {\n  constructor(\n    canvas: HTMLCanvasElement,\n    config: { type: \"bar\" | \"line\"; data: ChartData; options?: ChartOptions },\n  );\n  data: ChartData;\n  update(): void;\n  destroy(): void;\n}",
-        "language": "typescript",
-        "filename": "src/main/typescript/chart.d.ts",
+        "code": "{\n  \"extends\": \"./build/jaspring/typescript/types/tsconfig.jnpm.json\",\n  \"include\": [\"src/main/typescript/**/*.ts\"]\n}",
+        "language": "json",
+        "filename": "tsconfig.json",
         "note": ""
       },
       {
@@ -867,7 +1103,7 @@
           "Create the widget in mounted and keep it in a WeakMap keyed by the element. Feed new data in updated. Release it in destroyed. Extra methods, such as total here, answer browser calls. The type parameters give el and ctx.params their types, so a wrong field name fails the build.",
           "The canvas carries data-jsp-ignore, so patches keep the attributes and styles that Chart.js sets on it. updated only has to pass the new data."
         ],
-        "code": "interface Series {\n  labels: string[];\n  values: number[];\n}\n\nconst charts = new WeakMap<HTMLCanvasElement, Chart>();\n\njaspring.hooks.register<HTMLCanvasElement, Series>(\"chart\", {\n  mounted(el, ctx) {\n    const chart = new Chart(el, {\n      type: \"bar\",\n      data: {\n        labels: ctx.params.labels,\n        datasets: [{ label: \"Sales\", data: ctx.params.values }],\n      },\n      options: {\n        maintainAspectRatio: false,\n        onClick: (_, bars) => {\n          if (bars.length) ctx.pushEvent(\"bar-picked\", { index: bars[0].index });\n        },\n      },\n    });\n    charts.set(el, chart);\n  },\n  updated(el, ctx) {\n    const chart = charts.get(el);\n    if (!chart) return;\n    chart.data.labels = ctx.params.labels;\n    chart.data.datasets[0].data = ctx.params.values;\n    chart.update();\n  },\n  destroyed(el) {\n    charts.get(el)?.destroy();\n    charts.delete(el);\n  },\n  total(el) {\n    const values = charts.get(el)?.data.datasets[0].data ?? [];\n    return values.reduce((sum, value) => sum + value, 0);\n  },\n});",
+        "code": "import Chart from \"chart.js/auto\";\n\ninterface Series {\n  labels: string[];\n  values: number[];\n}\n\nconst charts = new WeakMap<HTMLCanvasElement, Chart<\"bar\", number[], string>>();\n\njaspring.hooks.register<HTMLCanvasElement, Series>(\"chart\", {\n  mounted(el, ctx) {\n    const chart = new Chart(el, {\n      type: \"bar\",\n      data: {\n        labels: ctx.params.labels,\n        datasets: [{ label: \"Sales\", data: ctx.params.values }],\n      },\n      options: {\n        maintainAspectRatio: false,\n        onClick: (_, bars) => {\n          if (bars.length) ctx.pushEvent(\"bar-picked\", { index: bars[0].index });\n        },\n      },\n    });\n    charts.set(el, chart);\n  },\n  updated(el, ctx) {\n    const chart = charts.get(el);\n    if (!chart) return;\n    chart.data.labels = ctx.params.labels;\n    chart.data.datasets[0].data = ctx.params.values;\n    chart.update();\n  },\n  destroyed(el) {\n    charts.get(el)?.destroy();\n    charts.delete(el);\n  },\n  total(el) {\n    const values = charts.get(el)?.data.datasets[0].data ?? [];\n    return values.reduce((sum, value) => sum + value, 0);\n  },\n});",
         "language": "typescript",
         "filename": "src/main/typescript/chart-hook.ts",
         "note": ""
@@ -899,13 +1135,13 @@
         "id": "checklist",
         "title": "Checklist for any library",
         "paragraphs": [
-          "Load the library with defer in the layout, because compiled hook scripts are modules added at the end of the body. Declare its API in a local .d.ts. Keep one widget per element in a WeakMap. Put data-jsp-ignore and a stable id on the element the library owns. Clean up timers, listeners, and widget instances in destroyed.",
+          "Declare browser runtime packages in implementation, use bundled typings or api declarations, and commit jnpm.lock. Node/OS imports such as fs fail bundling, including transitive imports. Keep one widget per element in a WeakMap. Put data-jsp-ignore and a stable id on the element the library owns. Clean up timers, listeners and widget instances in destroyed.",
           "Send data in, not markup. Hook method results may be up to 4 MiB characters over the WebSocket; send files and images to an ordinary endpoint. Libraries that replace or move the hooked element itself do not fit this model; give them a child element they own."
         ],
         "code": "",
         "language": "",
         "filename": "",
-        "note": "Verified with Jaspring 0.4.0, Chart.js 4.6.1 from a WebJar, and headless Chromium: the chart keeps its size through patches of its parent view, data changes reach updated, bar clicks reach Java, and hook results return through calls."
+        "note": "The hook uses Chart.js 4.6.1’s npm entrypoint and declarations. Run compileTypescript and lintTypescript after changing the wrapper or package version."
       }
     ]
   },
@@ -1068,7 +1304,7 @@
           "Oracle GraalVM 25.2.x, because Web Image is part of Oracle GraalVM and not GraalVM Community. Binaryen's wasm-as 119 or later on the PATH. On Fedora use dnf install binaryen; on macOS use brew install binaryen. Ubuntu 24.04 packages an older version, so use a Binaryen release.",
           "Apply the Jaspring Gradle plugin with the same version as the starter. The plugin adds the matching jaspring-browser-runtime to the jaspringBrowser configuration."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.4.0'\n}",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.5.0'\n}",
         "language": "gradle",
         "filename": "Gradle setup",
         "note": ""
@@ -1187,9 +1423,10 @@
         "id": "gradle-plugin",
         "title": "Apply the Gradle plugin",
         "paragraphs": [
-          "The Jaspring plugin provides build tooling: component scaffolding, the TypeScript build of browser scripts, and the WebAssembly build of Java browser closures. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the same version as the starter."
+          "The Jaspring plugin provides build tooling: component scaffolding, the TypeScript build of browser scripts, and the WebAssembly build of Java browser closures. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the same version as the starter.",
+          "Jaspring 0.5.0 includes JNPM for npm dependencies, browser bundles and ESLint. The JNPM guide covers dependency scopes, lockfiles and package imports."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.4.0'",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.5.0'",
         "language": "gradle",
         "filename": "Plugin configuration",
         "note": ""
@@ -1230,10 +1467,24 @@
         "note": "The TypeScript page covers the compiler hosts, the editor setup, and the startup fallback."
       },
       {
+        "id": "jnpm",
+        "title": "Install and bundle browser packages",
+        "paragraphs": [
+          "With JNPM, a top-level jnpm block declares implementation, api, devImplementation and devApi packages. Run jnpmLock, commit jnpm.lock, then build normally. Packages and generated npm files live under build/.",
+          "compileTypescript installs the lock and prepares declarations before checking and bundling the browser entrypoints. check runs ESLint. Node/OS API imports fail bundling, and packages are never installed at application startup."
+        ],
+        "code": "jnpmLock           create or reconcile the dependency lock\njnpmUpdate         refresh versions within declared ranges\njnpmInstall        install the exact lock\nprepareJnpmTypes   prepare types and editor metadata\ncompileTypescript  check and bundle\nlintTypescript     report lint diagnostics\nfixTypescript      apply fixes explicitly",
+        "language": "text",
+        "filename": "JNPM tasks",
+        "note": "This guide requires the Jaspring 0.5.0 Gradle plugin and matching starter. Follow Installation for the Maven Central setup."
+      },
+      {
         "id": "intellij",
         "title": "IntelliJ IDEA support",
         "paragraphs": [
-          "The framework repository includes a standalone IntelliJ plugin under tools/intellij-plugin. It supplies Java-backed template completion, navigation, and refactoring support. Follow that directory’s README for its build and installation instructions."
+          "The framework repository includes a standalone IntelliJ plugin under tools/intellij-plugin. It supplies Java-backed template completion, navigation, and refactoring support. Follow that directory’s README for its build and installation instructions.",
+          "The IntelliJ plugin’s JNPM integration imports dependency scopes through the Gradle model and prepares dependencies after sync. With JavaScript/TypeScript support installed, it provides ESLint diagnostics and fixes for unsaved text. Template features remain available without either optional integration.",
+          "Tools → JNPM offers dependency preparation, lock reconciliation and updates. Application run configurations receive a compileTypescript before-run task. A missing lock requires explicit reconciliation; sync never writes it. Supported IDE lines are IntelliJ IDEA 2026.2 and 2026.3."
         ],
         "code": "",
         "language": "",
@@ -1290,7 +1541,8 @@
         "title": "The framework modules",
         "paragraphs": [
           "jaspring-core owns the component, template, signal, zone, and live-page machinery. jaspring-spring-boot-starter adds auto-configuration, MVC views, layouts, live transports, browser assets, and serving of compiled TypeScript.",
-          "jaspring-gradle-plugin provides component scaffolding, the TypeScript build, and browser-closure builds. jaspring-typescript is the TypeScript 6 compiler hosted in GraalJS or Node, used by the plugin and by the starter's startup fallback. jaspring-browser-runtime is the BrowserClient facade compiled into WebAssembly. jaspring-sample shows the pieces working together."
+          "jaspring-gradle-plugin provides component scaffolding, the TypeScript build, and browser-closure builds. jaspring-typescript is the TypeScript 6 compiler hosted in GraalJS or Node, used by the plugin and by the starter's startup fallback. jaspring-browser-runtime is the BrowserClient facade compiled into WebAssembly. jaspring-sample shows the pieces working together.",
+          "The JNPM pipeline belongs to jaspring-gradle-plugin. Java coordinates the build, npm resolves and installs the locked graph, esbuild emits browser assets, and ESLint checks the sources. Those build tools do not run inside packaged applications."
         ],
         "code": "",
         "language": "",
@@ -1345,12 +1597,12 @@
         "id": "typescript-fallback",
         "title": "TypeScript at startup",
         "paragraphs": [
-          "With dev.isira:jaspring-typescript on the runtime classpath, the starter checks src/main/typescript at startup and compiles it when the build's manifest is missing or stale, for example after an IDE run that skipped Gradle. These are the defaults. A packaged application has no sources, so nothing runs there."
+          "For applications without JNPM, adding dev.isira:jaspring-typescript to the runtime classpath lets the starter compile stale or missing source builds at startup, such as an IDE launch that bypassed Gradle. These are the defaults. A packaged application has no sources, so the build manifest stands."
         ],
         "code": "jaspring:\n  typescript:\n    enabled: true\n    type-check: true\n    source-dir: src/main/typescript\n    host: graaljs",
         "language": "yaml",
         "filename": "application.yaml · defaults",
-        "note": ""
+        "note": "JNPM applications build before launch. With the development compiler present, a missing or stale bundle fails startup with an instruction to run compileTypescript. The source-only fallback never installs npm packages."
       },
       {
         "id": "tailwind-setting",
@@ -1376,13 +1628,42 @@
         "id": "current-status",
         "title": "Experimental, and usable for exploration",
         "paragraphs": [
-          "The published Jaspring 0.4.0 starter implements server-rendered components, live browser events, signals, zone and zoneless change detection, client hooks, browser calls, Java-to-WebAssembly browser closures, and browser scripts in TypeScript. Static generation and incremental regeneration remain future work.",
-          "A live page keeps its component tree and state on the server between events. Interaction depends on a working connection. Evaluate that architecture and the experimental API against your application’s needs."
+          "The Jaspring 0.5.0 starter implements server-rendered components, live browser events, signals, zone and zoneless change detection, client hooks, browser calls, Java-to-WebAssembly browser closures, and browser scripts in TypeScript. Static generation and incremental regeneration remain future work.",
+          "A live page keeps its component tree and state on the server between events. Interaction depends on a working connection. Evaluate that architecture and the experimental API against your application’s needs.",
+          "JNPM is included in Jaspring 0.5.0. Its Gradle dependency scopes, browser bundling and ESLint are available through the release plugin. The separate IntelliJ plugin adds dependency import, diagnostics and before-run builds."
         ],
         "code": "",
         "language": "",
         "filename": "",
         "note": ""
+      },
+      {
+        "id": "maven-limitations",
+        "title": "Maven build limitations",
+        "paragraphs": [
+          "Maven can use the Jaspring Spring Boot starter for server-rendered components, templates, signals, styling and live events. The runtime dependency does not apply the Gradle plugin, and there is no Jaspring Maven build plugin.",
+          "Maven has no integrated compileTypescript task for build-time type checking and packaging browser scripts. It also cannot run JNPM’s dependency installation, lockfile management, browser bundling or ESLint tasks. Use Gradle for this workflow; prebuilt assets or a custom build integration must otherwise be supplied separately.",
+          "Component generation and compilation of Platform.onBrowser Java closures to WebAssembly are also Gradle plugin tasks. Maven does not provide them, and the IntelliJ plugin’s JNPM dependency import and before-run build require a Gradle project.",
+          "Package-free TypeScript can still use the startup fallback: add the matching dev.isira:jaspring-typescript dependency with runtime scope and make the sources available in src/main/typescript or classpath:/typescript/. It compiles and serves scripts from memory at startup. It does not add a Maven compilation step, install npm packages or enable JNPM."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "JNPM is included in the Jaspring 0.5.0 Gradle plugin. Adding the 0.5.0 starter to a Maven build does not enable its build tooling.",
+        "links": [
+          {
+            "label": "Recommended Gradle installation",
+            "href": "/docs/installation#plugin-repositories"
+          },
+          {
+            "label": "TypeScript startup fallback",
+            "href": "/docs/typescript#startup-fallback"
+          },
+          {
+            "label": "JNPM installation",
+            "href": "/docs/jnpm#requirements"
+          }
+        ]
       },
       {
         "id": "angular-differences",
@@ -1414,6 +1695,7 @@
         "paragraphs": [
           "Event preventDefault and stopPropagation flags are decided when handlers render. The HTML sanitizer uses an Angular-derived allowlist over a tolerant tokenizer instead of a browser DOM parser.",
           "Java browser closures run client-side. Captures and results cross the network as JSON; never capture secrets. The optional WebAssembly runtime needs a compatible browser and Oracle GraalVM’s build tooling.",
+          "JNPM application packages must work in the browser. Node/OS imports such as fs and child_process, including transitive imports, fail the build. Native Node addons and dependency lifecycle scripts are unsupported. Build-time development tools run separately in managed Node.",
           "Report reproducible issues in the framework’s GitHub repository. Include the smallest component, template, configuration, and steps that demonstrate the behavior."
         ],
         "code": "",
@@ -1427,42 +1709,44 @@
     "slug": "font-awesome",
     "group": "Cookbook",
     "title": "Font Awesome icons",
-    "description": "Add Font Awesome from a WebJar and use its icons in any template. No JavaScript required.",
-    "source": "jaspring-spring-boot-starter/src/main/java/dev/isira/jaspring/boot/web/JaspringResourceConfiguration.java",
+    "description": "Install Font Awesome through JNPM and bundle its CSS and web fonts. Icons remain ordinary template elements through live patches.",
+    "source": "docs/jnpm.md",
     "sections": [
       {
         "id": "why-it-works",
         "title": "Why it just works",
         "paragraphs": [
           "Font Awesome's web font version is plain CSS and font files. Icons are ordinary <i> elements in server HTML, so they render on first paint and survive every patch.",
-          "Jaspring keeps Spring Boot's static resource handling. The starter only adds /_jaspring/**, so Spring Boot still serves WebJars under /webjars/**. Your layout is plain HTML, so any stylesheet you link there reaches the browser unchanged."
+          "JNPM bundles imported stylesheets and the font files they reference. Jaspring links the generated CSS once in the page head and serves the fonts from the application’s own /_jaspring/ts/ assets. Icon rendering uses CSS and web fonts; no client hook or icon-replacement script is needed."
         ],
         "code": "",
         "language": "",
         "filename": "",
-        "note": ""
+        "note": "This guide requires the Jaspring 0.5.0 Gradle plugin and matching starter. Follow Installation for the Maven Central setup."
       },
       {
-        "id": "add-the-webjar",
-        "title": "Add the WebJar",
+        "id": "add-the-package",
+        "title": "Declare the npm package",
         "paragraphs": [
-          "Add the Font Awesome WebJar. Add webjars-locator-lite as well if you want URLs without the version number, so an upgrade only touches build.gradle."
+          "Add the scoped @fortawesome/fontawesome-free package to jnpm. Use implementation because its CSS and font files are browser assets. This CSS-only usage needs no api declaration package.",
+          "Run ./gradlew jnpmLock and commit jnpm.lock alongside the Gradle declaration. Then run ./gradlew build to install the exact lock, check the TypeScript entrypoint and emit the assets."
         ],
-        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.webjars:font-awesome:7.3.0'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "code": "jnpm {\n    implementation(\"@fortawesome/fontawesome-free:7.3.0\")\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
       },
       {
-        "id": "link-the-stylesheet",
-        "title": "Link the stylesheet",
+        "id": "import-the-stylesheet",
+        "title": "Import the stylesheet",
         "paragraphs": [
-          "Link all.min.css in the layout. The stylesheet loads its fonts from the same WebJar. Without webjars-locator-lite, include the version: /webjars/font-awesome/7.3.0/css/all.min.css."
+          "Create a top-level TypeScript entrypoint and import the package stylesheet. JNPM follows its relative font URLs, emits hashed CSS and font files, and rewrites the references to those emitted assets.",
+          "Jaspring adds the generated stylesheet and entry module to live pages automatically. Import the CSS once, either in icons.ts or in an existing entrypoint. When migrating, remove the old Font Awesome stylesheet link and its WebJar dependency to avoid duplicate styles and fonts."
         ],
-        "code": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>My app</title>\n  <link rel=\"stylesheet\" href=\"/webjars/font-awesome/css/all.min.css\">\n</head>\n<body>\n  <app-root></app-root>\n</body>\n</html>",
-        "language": "html",
-        "filename": "src/main/resources/jaspring/index.html",
-        "note": ""
+        "code": "import \"@fortawesome/fontawesome-free/css/all.min.css\";",
+        "language": "typescript",
+        "filename": "src/main/typescript/icons.ts",
+        "note": "Use the tsconfig.jnpm.json editor setup from JNPM. Its generated declarations cover CSS imports. Keep jaspring.live.transport enabled: automatic bundle styles and scripts are injected together with the client runtime."
       },
       {
         "id": "use-icons",
@@ -1488,7 +1772,7 @@
       },
       {
         "id": "avoid-svg-js",
-        "title": "Use the CSS version, not SVG with JavaScript",
+        "title": "Keep icons as web fonts",
         "paragraphs": [
           "Font Awesome also ships an SVG + JavaScript version that replaces <i> tags with <svg> in the browser. Avoid it with Jaspring. Each patch morphs the view back to the server HTML, which has the <i>, and the script then replaces it again. You get extra DOM work and flicker on every update.",
           "If you need inline SVG, render the SVG markup from the server in a small icon component instead."
@@ -1499,15 +1783,16 @@
         "note": ""
       },
       {
-        "id": "other-ways",
-        "title": "Other ways to load it",
+        "id": "updates-and-offline",
+        "title": "Updates and offline builds",
         "paragraphs": [
-          "A CDN link in the layout is the shortest path, but the page then depends on that CDN at run time. A copy of the files under src/main/resources/static works without any dependency, but you update it by hand. The WebJar keeps the version in Gradle, works offline, and fits a strict Content Security Policy."
+          "To upgrade this exact version, change the JNPM declaration, run jnpmLock and review the lockfile diff. If you choose a semver range instead, jnpmUpdate refreshes versions within it. Normal builds keep the committed resolutions.",
+          "The application JAR contains the emitted CSS, fonts and license notices. Deployment does not need npm or node_modules. clean removes the build installation; after an online build has cached the packages, an offline build reinstalls them from Gradle’s user cache."
         ],
-        "code": "<!-- CDN -->\n<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css\">\n\n<!-- Copied into src/main/resources/static/fontawesome/ -->\n<link rel=\"stylesheet\" href=\"/fontawesome/css/all.min.css\">",
-        "language": "html",
-        "filename": "Alternatives",
-        "note": "Verified with Jaspring 0.4.0, Font Awesome 7.3.0 from a WebJar, and webjars-locator-lite 1.1.5: icons render on first paint and after live patches."
+        "code": "./gradlew jnpmLock\n./gradlew build\n\n# Once the toolchain and packages are cached:\n./gradlew clean build --offline",
+        "language": "shell",
+        "filename": "Build the local assets",
+        "note": ""
       }
     ]
   }

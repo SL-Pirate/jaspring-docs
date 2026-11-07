@@ -67,7 +67,7 @@ requests. Live page state belongs to one application process; use session affini
 
 ## Content and components
 
-- `src/main/resources/docs/catalog.json` is the ordered source for all 22 documentation pages, their sections, code examples, navigation, and search.
+- `src/main/resources/docs/catalog.json` is the ordered source for all 23 documentation pages, their sections, code examples, navigation, and search.
 - `src/main/java/dev/isira/jaspring/docs/components` contains the page, header/search, landing page, and documentation components.
 - `src/main/resources/dev/isira/jaspring/docs/components` contains their Angular HTML templates.
 - `src/main/resources/jaspring/index.html` is the document layout. The controller inserts escaped page titles and descriptions before sending the rendered document.
@@ -82,8 +82,11 @@ Use a unique slug and unique section IDs within each page. Navigation, search, p
 
 ## Framework versions
 
-The site runs on the published **Jaspring 0.4.0** starter and Gradle plugin, and the documentation describes that release,
-including TypeScript browser scripts, client hooks, browser calls, and Java-to-WebAssembly browser closures.
+The documentation targets **Jaspring 0.5.0**, which includes JNPM. The installation, JNPM, Chart.js and
+Font Awesome guides use the matching 0.5.0 Gradle plugin and libraries from Maven Central.
+
+The website itself currently runs on the **Jaspring 0.4.0** starter and Gradle plugin declared in `build.gradle`.
+It remains package-free and does not need a JNPM installation.
 The plugin compiles `src/main/typescript`. The site has no browser closures, so the plugin skips the WebAssembly build
 and the toolchain is not needed. `jaspring-typescript` is a `developmentOnly` dependency: `bootRun` recompiles the
 script at startup when an IDE run skipped Gradle. It is not part of the packaged JAR.

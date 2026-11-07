@@ -9,9 +9,12 @@ public record DocPage(String slug, String group, String title, String descriptio
     }
 
     public record Section(String id, String title, List<String> paragraphs, String language,
-                          String filename, String code, String note) {
+                          String filename, String code, String note, List<Link> links) {
         public Section {
             paragraphs = List.copyOf(paragraphs);
+            links = links == null ? List.of() : List.copyOf(links);
         }
     }
+
+    public record Link(String label, String href) {}
 }
