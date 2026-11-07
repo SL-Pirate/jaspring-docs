@@ -45,13 +45,13 @@
         "id": "project-status",
         "title": "Growing in the open",
         "paragraphs": [
-          "Jaspring 0.3.0 is experimental and MIT licensed. The published starter includes server rendering, live events, signals, change detection, and the browser APIs: client hooks, browser calls, and Java browser closures compiled to WebAssembly. Static generation and incremental regeneration are future work.",
-          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.3.0 release."
+          "Jaspring 0.4.0 is experimental and MIT licensed. The published starter includes server rendering, live events, signals, change detection, and the browser APIs: client hooks, browser calls, and Java browser closures compiled to WebAssembly. Browser scripts can be written in TypeScript and are compiled without Node.js. Static generation and incremental regeneration are future work.",
+          "Start with a small application, try the live examples, and review the compatibility guide before adopting Angular-specific assumptions. Installation targets the published 0.4.0 release."
         ],
         "code": "",
         "language": "",
         "filename": "",
-        "note": "This website is itself a Jaspring application. Its live counter, search results, and navigation state run as Java components."
+        "note": "This website is itself a Jaspring application. Its live counter, search results, and navigation state run as Java components, and its one browser script is written in TypeScript."
       }
     ]
   },
@@ -67,7 +67,7 @@
         "title": "Before you begin",
         "paragraphs": [
           "Use Java 25 and Spring Boot 4.1.x. Oracle GraalVM 25.2.4 matches the bundled GraalJS runtime and enables optimized startup compilation. Other Java 25 distributions work with the interpreter and can start more slowly.",
-          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler and styling tools are already bundled in the framework. Java browser closures are optional and have extra build requirements, covered in WebAssembly build."
+          "Your application does not need Node.js, npm, or Angular CLI. The Angular compiler, the styling tools, and the TypeScript compiler are already bundled in the framework. Browser scripts in TypeScript need the Jaspring Gradle plugin, covered in TypeScript. Java browser closures are optional and have extra build requirements, covered in WebAssembly build."
         ],
         "code": "",
         "language": "",
@@ -80,7 +80,7 @@
         "paragraphs": [
           "Add Maven Central and the Jaspring starter to an existing Spring Boot application. Add Spring Boot’s WebSocket starter for the default live transport; without it, Jaspring uses HTTP."
         ],
-        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
+        "code": "repositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.springframework.boot:spring-boot-starter-websocket'\n}\n\ntasks.named('bootRun') {\n    jvmArgs '--enable-native-access=ALL-UNNAMED'\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
@@ -91,7 +91,7 @@
         "paragraphs": [
           "Use the same starter coordinates in your Spring Boot Maven project. Configure native access for the Java process that starts the application."
         ],
-        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.3.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
+        "code": "<dependency>\n    <groupId>dev.isira</groupId>\n    <artifactId>jaspring-spring-boot-starter</artifactId>\n    <version>0.4.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-websocket</artifactId>\n</dependency>",
         "language": "html",
         "filename": "pom.xml",
         "note": ""
@@ -458,7 +458,7 @@
         "title": "Two ways to reach the browser",
         "paragraphs": [
           "Some work only the browser can do: draw on a canvas, read localStorage, ask for the user's location, or wrap a JavaScript widget. Jaspring gives you two tools for it. Both use the same page connection as events and patches.",
-          "Client hooks and browser calls are plain JavaScript. Use them for widgets, third-party libraries, and pages where every kilobyte counts. Java browser closures are Java lambdas compiled to WebAssembly at build time. Use them when you want one language and can afford the runtime download."
+          "Client hooks and browser calls are JavaScript, written in TypeScript under src/main/typescript or as plain scripts. Use them for widgets, third-party libraries, and pages where every kilobyte counts. Java browser closures are Java lambdas compiled to WebAssembly at build time. Use them when you want one language and can afford the runtime download."
         ],
         "code": "Client hooks        JavaScript bound to an element's lifetime\n                    data-jsp-hook + jaspring.hooks.register\nBrowser calls       Java asks the browser for a value\n                    Browser.current().call(...) + jaspring.calls.register\nBrowser closures    A Java lambda runs in the browser as WebAssembly\n                    Platform.onBrowser(client -> ...)",
         "language": "text",
@@ -470,7 +470,7 @@
         "title": "Choose the right tool",
         "paragraphs": [
           "Use a client hook when an element needs browser code for its whole life: a chart, a map, a canvas, or a date picker. Use a browser call when Java needs one answer from the browser, such as a size, a stored value, or the result of a widget method. Use a Java closure when you want to write that browser code in Java and the WebAssembly build fits your toolchain.",
-          "Hooks and calls work with any Java 25 runtime and need no extra build step. Java closures need Oracle GraalVM with Web Image and Binaryen at build time, and a browser with WebAssembly GC support at run time."
+          "Hooks and calls work with any Java 25 runtime. In TypeScript they need only the Jaspring Gradle plugin, which bundles the compiler. Java closures need Oracle GraalVM with Web Image and Binaryen at build time, and a browser with WebAssembly GC support at run time."
         ],
         "code": "",
         "language": "",
@@ -495,7 +495,7 @@
         "paragraphs": [
           "The server owns the markup. When a view changes, the browser runtime morphs its host element to the new server HTML. DOM changes made by browser code inside that view are transient, so keep lasting state in signals, and keep widget state in the hook or closure, not in the markup.",
           "Everything sent to the browser is visible to the user. Never pass secrets as call arguments, hook parameters, or closure captures. Treat values coming back from the browser as user input and validate them in Java.",
-          "With jaspring.live.transport=off there is no client runtime. Every browser call and closure fails at once with BrowserCallException, and page scripts must not expect window.jaspring."
+          "With jaspring.live.transport=off there is no client runtime and no compiled TypeScript scripts are added to the page. Every browser call and closure fails at once with BrowserCallException, and hand-linked page scripts must not expect window.jaspring."
         ],
         "code": "",
         "language": "",
@@ -527,11 +527,12 @@
         "id": "register-the-hook",
         "title": "Register the hook",
         "paragraphs": [
-          "Register the hook from a page script with jaspring.hooks.register(name, hook). Each method receives the element and a context object. Register at any time: elements already on the page mount as soon as their hook is registered."
+          "Register the hook from a page script with jaspring.hooks.register(name, hook). Page scripts are TypeScript files under src/main/typescript. Each method receives the element and a context object. Register at any time: elements already on the page mount as soon as their hook is registered.",
+          "The type parameters name the element type and the params type, so el is an HTMLCanvasElement and ctx.params is a number[] here. The jaspring global is typed by the compiler's bundled jaspring.d.ts."
         ],
-        "code": "jaspring.hooks.register('sparkline', {\n  mounted(el, ctx) {\n    this.draw(el, ctx.params);\n    el.addEventListener('click', (event) => {\n      const index = Math.floor(event.offsetX / (el.width / ctx.params.length));\n      ctx.pushEvent('point-picked', { index });\n    });\n  },\n  updated(el, ctx) {\n    this.draw(el, ctx.params);\n  },\n  destroyed(el) { },\n  draw(el, points) { /* canvas drawing */ },\n  size(el) {\n    return { width: el.width, height: el.height };\n  }\n});",
-        "language": "javascript",
-        "filename": "src/main/resources/static/sparkline.js",
+        "code": "function draw(el: HTMLCanvasElement, points: number[]): void {\n  /* canvas drawing */\n}\n\njaspring.hooks.register<HTMLCanvasElement, number[]>(\"sparkline\", {\n  mounted(el, ctx) {\n    draw(el, ctx.params);\n    el.addEventListener(\"click\", (event) => {\n      const index = Math.floor(event.offsetX / (el.width / ctx.params.length));\n      ctx.pushEvent(\"point-picked\", { index });\n    });\n  },\n  updated(el, ctx) {\n    draw(el, ctx.params);\n  },\n  destroyed(el) {},\n  size(el) {\n    return { width: el.width, height: el.height };\n  },\n});",
+        "language": "typescript",
+        "filename": "src/main/typescript/sparkline.ts",
         "note": ""
       },
       {
@@ -563,11 +564,11 @@
         "id": "one-object-many-elements",
         "title": "One hook object, many elements",
         "paragraphs": [
-          "A registered hook is one object shared by every element that uses its name. this points to that shared object, so it is a good place for helper methods but not for per-element state.",
+          "A registered hook is one object shared by every element that uses its name. this points to that shared object, so keep helpers as module functions and do not store per-element state on the hook.",
           "Keep per-element state in a WeakMap keyed by the element. The entry goes away with the element."
         ],
-        "code": "const widgets = new WeakMap();\n\njaspring.hooks.register('editor', {\n  mounted(el, ctx) { widgets.set(el, createEditor(el, ctx.params)); },\n  destroyed(el) {\n    widgets.get(el)?.dispose();\n    widgets.delete(el);\n  }\n});",
-        "language": "javascript",
+        "code": "// Editor, EditorOptions and createEditor come from the library's typings.\nconst editors = new WeakMap<HTMLElement, Editor>();\n\njaspring.hooks.register<HTMLDivElement, EditorOptions>(\"editor\", {\n  mounted(el, ctx) {\n    editors.set(el, createEditor(el, ctx.params));\n  },\n  destroyed(el) {\n    editors.get(el)?.dispose();\n    editors.delete(el);\n  },\n});",
+        "language": "typescript",
         "filename": "Per-element state",
         "note": ""
       },
@@ -575,25 +576,25 @@
         "id": "patches-and-hooked-dom",
         "title": "Patches and hook-managed DOM",
         "paragraphs": [
-          "A patch morphs the whole view to the server's HTML, including the hooked element and its children. Attributes, inline styles, and child nodes that your script added are removed when the enclosing view changes. Then updated runs.",
-          "Design hooks for this. Draw into a canvas, or re-apply what you need in updated. Keep the hooked element in a small component, so patches of unrelated state do not reach it as often. Canvas pixels are not DOM and survive a morph."
+          "A patch morphs the whole view to the server's HTML, including the hooked element and its children. Attributes, inline styles, and child nodes that your script added are removed when the enclosing view changes. Then updated runs. Canvas pixels are not DOM and survive a morph.",
+          "Add data-jsp-ignore to an element whose DOM a widget owns, such as an editor, a map, a date picker, or a Chart.js canvas. A patch then keeps its children and attributes, and only adds or updates its data-* attributes, so new data-jsp-hook-params still reach updated. Give the element a stable id so the morph always matches it to the same node. Remove data-jsp-ignore from the template and the next patch morphs the element again."
         ],
-        "code": "",
-        "language": "",
-        "filename": "",
+        "code": "<div id=\"editor\"\n     data-jsp-hook=\"editor\"\n     data-jsp-ignore\n     [attr.data-jsp-hook-params]=\"options() | json\"></div>",
+        "language": "html",
+        "filename": "editor.component.html",
         "note": ""
       },
       {
         "id": "load-the-script",
-        "title": "Load the page script",
+        "title": "Scripts reach the page by themselves",
         "paragraphs": [
-          "The client runtime is added at the end of <body>, so window.jaspring does not exist while <head> is parsed. Load hook scripts with type=\"module\" or defer. Both run after the runtime.",
-          "Put the script in the layout, src/main/resources/jaspring/index.html. Files under src/main/resources/static are served from the site root by Spring Boot."
+          "Every top-level file in src/main/typescript gets a <script type=\"module\"> tag after the client runtime, so you do not edit the layout. Module scripts are deferred, so window.jaspring exists when they run, wherever they stand in the document.",
+          "Plain JavaScript still works. Put it under src/main/resources/static and link it from the layout, src/main/resources/jaspring/index.html, with type=\"module\" or defer."
         ],
-        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>My app</title>\n  <script type=\"module\" src=\"/sparkline.js\"></script>\n</head>",
+        "code": "<body>\n  <app-root>…</app-root>\n  <script src=\"/_jaspring/idiomorph.min.js\"></script>\n  <script src=\"/_jaspring/jaspring.js\" data-jsp-page=\"…\" data-jsp-transport=\"websocket\"></script>\n  <script type=\"module\" src=\"/_jaspring/ts/sparkline.js?v=574f4503\"></script>\n</body>",
         "language": "html",
-        "filename": "src/main/resources/jaspring/index.html",
-        "note": "With jaspring.live.transport=off the runtime is not loaded. Guard shared scripts with if (window.jaspring) when a page may render without it."
+        "filename": "Rendered page",
+        "note": "With jaspring.live.transport=off the runtime is not loaded and compiled scripts are not added. Guard hand-linked shared scripts with if (window.jaspring) when a page may render without it."
       }
     ]
   },
@@ -608,11 +609,11 @@
         "id": "register-a-function",
         "title": "Register a page function",
         "paragraphs": [
-          "Register a function with jaspring.calls.register(name, fn). The function receives the call arguments and returns a JSON value or a promise of one."
+          "Register a function with jaspring.calls.register(name, fn) from a page script under src/main/typescript. The function receives the call arguments and returns a JSON value or a promise of one."
         ],
-        "code": "jaspring.calls.register('viewport', () => ({\n  width: window.innerWidth,\n  height: window.innerHeight\n}));\n\njaspring.calls.register('confirm', (message) => window.confirm(message));",
-        "language": "javascript",
-        "filename": "src/main/resources/static/app.js",
+        "code": "jaspring.calls.register(\"viewport\", () => ({\n  width: window.innerWidth,\n  height: window.innerHeight,\n}));\n\njaspring.calls.register(\"confirm\", (message: string) => window.confirm(message));",
+        "language": "typescript",
+        "filename": "src/main/typescript/app.ts",
         "note": ""
       },
       {
@@ -644,7 +645,7 @@
         "title": "Read the result",
         "paragraphs": [
           "The value arrives as parsed JSON: Map, List, String, Number, Boolean, or null. undefined becomes null. The type parameter of call is an unchecked cast, so read numbers as Number and convert them.",
-          "Keep results small. In 0.3.0 the WebSocket transport closes the connection when a single message is larger than the server's text message limit, 8 KB with Tomcat's defaults. Do not return images, files, or large documents through a call; send them to an ordinary endpoint instead."
+          "Over the WebSocket a result may be up to 4 MiB characters. The server joins message fragments itself, so the servlet container's text buffer, 8 KB on Tomcat, does not apply. Send images, files, and large documents to an ordinary endpoint instead."
         ],
         "code": "Browser.current().<Map<String, Object>>call(\"viewport\").thenAccept(viewport -> {\n    final var width = ((Number) viewport.get(\"width\")).intValue();\n    compact.set(width < 640);\n});",
         "language": "java",
@@ -655,7 +656,7 @@
         "id": "failures",
         "title": "Handle failures",
         "paragraphs": [
-          "The task fails with BrowserCallException when the browser function throws or rejects, when the target is not registered, when no answer arrives within 30 seconds, or when live events are off. Destroying the page cancels open calls.",
+          "The task fails with BrowserCallException when the browser function throws or rejects, when the target is not registered, when the result is larger than the WebSocket limit, when no answer arrives within 30 seconds, or when live events are off. An oversized result fails at once, not after the timeout. Destroying the page cancels open calls.",
           "whenComplete usually receives a CompletionException. The browser's reason is its cause.",
           "The page stays unstable until the answer arrives. Over HTTP, the client keeps polling until every open call is answered."
         ],
@@ -667,20 +668,159 @@
     ]
   },
   {
+    "slug": "typescript",
+    "group": "Browser",
+    "title": "TypeScript",
+    "description": "Write hooks and page functions in TypeScript. The Gradle plugin type-checks and compiles them without Node.js, and the page loads them by itself.",
+    "source": "docs/typescript.md",
+    "sections": [
+      {
+        "id": "typed-browser-scripts",
+        "title": "Typed browser scripts",
+        "paragraphs": [
+          "Client hooks, page functions for browser calls, and any other code that runs in the page can be written in TypeScript. Put the files in src/main/typescript. The Gradle plugin type-checks and compiles them before the application runs, and Jaspring adds them to every live page.",
+          "Nothing in production runs the compiler. The jar holds plain JavaScript, served as ES modules under /_jaspring/ts/."
+        ],
+        "code": "src/main/typescript/\n  sparkline.ts      entry point  → /_jaspring/ts/sparkline.js\n  app.ts            entry point  → /_jaspring/ts/app.js\n  lib/bars.ts       module, reached through imports\n  chart.d.ts        global types, emits nothing",
+        "language": "text",
+        "filename": "Project layout",
+        "note": ""
+      },
+      {
+        "id": "set-up",
+        "title": "Set up the build",
+        "paragraphs": [
+          "Apply the Jaspring Gradle plugin with the same version as the starter. It bundles TypeScript 6.0.3 and runs it in GraalJS inside a Gradle worker, so there is nothing to install.",
+          "The developmentOnly dependency is optional. It lets bootRun recompile sources that the build has not seen, described below under Startup fallback. It is not part of the packaged application."
+        ],
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.4.0'\n}\n\ndependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    developmentOnly 'dev.isira:jaspring-typescript:0.4.0'\n}",
+        "language": "gradle",
+        "filename": "Gradle setup",
+        "note": ""
+      },
+      {
+        "id": "entry-points-and-modules",
+        "title": "Entry points and modules",
+        "paragraphs": [
+          "Every .ts file is compiled, and nested paths are kept. Top-level files are entry points and get a script tag in the page. Files in subdirectories are modules that entry points import. Import them with the .js extension, as in any ES module project; a .ts extension is accepted and rewritten.",
+          "The jaspring global is typed everywhere. Its types are also importable from \"jaspring\": Hook, HookContext, CallFn, and Global. The typings come from the client runtime's own source, so they match what runs."
+        ],
+        "code": "// src/main/typescript/lib/bars.ts — a module, no script tag\nexport function drawBars(el: HTMLCanvasElement, points: number[]): void {\n  /* canvas drawing */\n}\n\n// src/main/typescript/bars-hook.ts — an entry point\nimport type { Hook } from \"jaspring\";\nimport { drawBars } from \"./lib/bars.js\";\n\nconst bars: Hook<HTMLCanvasElement, number[]> = {\n  mounted: (el, ctx) => drawBars(el, ctx.params),\n  updated: (el, ctx) => drawBars(el, ctx.params),\n};\n\njaspring.hooks.register(\"bars\", bars);",
+        "language": "typescript",
+        "filename": "Two files",
+        "note": ""
+      },
+      {
+        "id": "compiler-options",
+        "title": "Fixed compiler options",
+        "paragraphs": [
+          "The compiler options are fixed. The import rule, the served format, and the editor setup depend on them. strict mode is on."
+        ],
+        "code": "target                 es2022\nmodule                 esnext\nmoduleResolution       bundler\nlib                    es2022, dom\nstrict                 true\nisolatedModules        true\nverbatimModuleSyntax   true\nevery file             a module",
+        "language": "text",
+        "filename": "Compiler options",
+        "note": ""
+      },
+      {
+        "id": "build-tasks",
+        "title": "The build tasks",
+        "paragraphs": [
+          "Two tasks run before processResources. Projects without src/main/typescript skip both, and the compiler is not even resolved.",
+          "A GraalVM JDK makes the compiler several times faster. The plugin uses GRAALVM_HOME, or the JDK running Gradle when it is GraalVM. On GraalVM 25, loading the compiler takes about 3 seconds and a type-checked compile of a few files about 6 seconds; a warm compile takes under 1 second. Gradle's worker daemons keep it warm between builds, and the task is cached like any other."
+        ],
+        "code": "extractTypescriptTypes   jaspring.d.ts and tsconfig.base.json\n                         → build/jaspring/typescript/types/\ncompileTypescript        type-check and compile src/main/typescript\n                         → jaspring/ts/**/*.js and jaspring/jaspring-typescript.json\n                           in the application's resources",
+        "language": "text",
+        "filename": "Tasks",
+        "note": ""
+      },
+      {
+        "id": "settings",
+        "title": "Configure the build",
+        "paragraphs": [
+          "The typescript block is optional; these are the defaults. host = NODE runs the same bundled compiler in a Node 20 or later process, which starts and compiles faster. The output is identical, so the host is a developer's choice, not a project setting.",
+          "Each setting has a Gradle property for one-off builds: -Pjaspring.typescript.typeCheck=false transpiles without checking, -Pjaspring.typescript.host=node picks Node, -Pjaspring.typescript.nodePath points to a Node binary, and -Pjaspring.typescript.skip=true skips the build. By default the first Node 20+ on the PATH is used."
+        ],
+        "code": "jaspring {\n    typescript {\n        sourceDir = layout.projectDirectory.dir('src/main/typescript')\n        typeCheck = true\n        host = dev.isira.jaspring.gradle.JaspringExtension.Typescript.Host.GRAALJS\n        skip = false\n    }\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": ""
+      },
+      {
+        "id": "type-errors",
+        "title": "Type errors fail the build",
+        "paragraphs": [
+          "Type errors fail compileTypescript in tsc's format. Paths are relative to the project root, so IDE consoles make them clickable."
+        ],
+        "code": "> Task :compileTypescript FAILED\nsrc/main/typescript/sparkline.ts(12,5): error TS2322: Type 'string' is not assignable to type 'number'.",
+        "language": "text",
+        "filename": "Terminal",
+        "note": ""
+      },
+      {
+        "id": "editor",
+        "title": "Set up the editor",
+        "paragraphs": [
+          "Add a tsconfig.json to the project root. IntelliJ IDEA and VS Code then check the sources with the build's options and the jaspring typings. Run any build, or ./gradlew extractTypescriptTypes, once so the extended file exists."
+        ],
+        "code": "{\n  \"extends\": \"./build/jaspring/typescript/types/tsconfig.base.json\",\n  \"include\": [\n    \"src/main/typescript/**/*.ts\",\n    \"build/jaspring/typescript/types/jaspring.d.ts\"\n  ]\n}",
+        "language": "json",
+        "filename": "tsconfig.json",
+        "note": ""
+      },
+      {
+        "id": "serving",
+        "title": "How scripts reach the page",
+        "paragraphs": [
+          "/_jaspring/ts/** serves the compiled files with a one-hour cache, or no-cache in dev mode. The layout gets one tag per entry point after the client runtime. The source digest is in the URL, so browsers fetch a new build at once.",
+          "Module scripts are deferred, so they run after the classic jaspring.js tag and jaspring is always defined. The tags are added only together with the runtime: with jaspring.live.transport=off there is no runtime and no page scripts. Scripts linked by hand in the layout keep working; they must be type=\"module\" or placed after the runtime."
+        ],
+        "code": "<script src=\"/_jaspring/jaspring.js\" data-jsp-page=\"…\" data-jsp-transport=\"websocket\"></script>\n<script type=\"module\" src=\"/_jaspring/ts/sparkline.js?v=574f4503\"></script>",
+        "language": "html",
+        "filename": "Rendered page",
+        "note": ""
+      },
+      {
+        "id": "startup-fallback",
+        "title": "Startup fallback",
+        "paragraphs": [
+          "The build's manifest records a digest per source file. With dev.isira:jaspring-typescript on the runtime classpath, the starter compares it at startup with src/main/typescript next to the working directory, or with classpath:/typescript/ when that directory is absent. It compiles when the manifest is missing or stale: an IDE run that bypassed Gradle, or a build without the plugin. The result is served from memory.",
+          "Compile errors fail startup, like a template that Angular rejects. A packaged application has no sources, so its manifest stands and nothing runs. In Maven, use the runtime scope for the dependency."
+        ],
+        "code": "jaspring:\n  typescript:\n    enabled: true            # the fallback at all\n    type-check: true         # false transpiles without checking\n    source-dir: src/main/typescript\n    host: graaljs            # or node",
+        "language": "yaml",
+        "filename": "application.yaml · defaults",
+        "note": ""
+      },
+      {
+        "id": "limits",
+        "title": "Limits",
+        "paragraphs": [
+          "Spring devtools does not watch .ts files. After editing one, run ./gradlew compileTypescript or restart the application. An IDE that delegates builds to Gradle does this when you build.",
+          "There is no bundling and no npm imports: a script may import only its sibling modules. Load third-party libraries with a script tag in the layout and type them with a local .d.ts, as shown in Third-party JavaScript.",
+          "TypeScript 6 is the last JavaScript release of the compiler; 7.x is a native binary. Language features after the 6.x line would need a native host. A JVM without GraalVM's optimizing compiler runs the compiler interpreted, about twice as slow on a cold start, and the build says so. host = NODE avoids that where Node is installed."
+        ],
+        "code": "",
+        "language": "",
+        "filename": "",
+        "note": "This website's own browser script is src/main/typescript/site.ts. It handles syntax coloring, clipboard access, keyboard shortcuts, and dialog focus."
+      }
+    ]
+  },
+  {
     "slug": "third-party-libraries",
     "group": "Browser",
     "title": "Third-party JavaScript",
-    "description": "Use browser libraries such as Chart.js with Jaspring. Load them in the layout and wrap them in a client hook.",
+    "description": "Use browser libraries such as Chart.js with Jaspring. Load them in the layout, type them, and wrap them in a client hook.",
     "source": "docs/events.md",
     "sections": [
       {
         "id": "the-pattern",
         "title": "The pattern",
         "paragraphs": [
-          "Jaspring does not bundle JavaScript, so a browser library is used the same way as on any server-rendered page. Load it in the layout. Wrap it in a client hook. Send data with hook parameters, send user actions back with ctx.pushEvent, and let Java ask for results with browser calls.",
+          "Jaspring does not bundle JavaScript, so a browser library is used the same way as on any server-rendered page. Load it in the layout. Declare the parts you use in a local .d.ts file. Wrap it in a TypeScript client hook and mark its element with data-jsp-ignore. Send data with hook parameters, send user actions back with ctx.pushEvent, and let Java ask for results with browser calls.",
           "This page builds a Chart.js bar chart. The same steps work for maps, editors, and date pickers."
         ],
-        "code": "1. Add the library    WebJar, CDN, or a file under static/\n2. Load it            <script> in jaspring/index.html\n3. Wrap it            jaspring.hooks.register('chart', ...)\n4. Feed it            [attr.data-jsp-hook-params]=\"data | json\"\n5. Listen             ctx.pushEvent → (event)=\"handler()\"\n6. Ask it             Browser.current().call(\"chart.method\")",
+        "code": "1. Add the library    WebJar, CDN, or a file under static/\n2. Load it            <script defer> in jaspring/index.html\n3. Type it            src/main/typescript/chart.d.ts\n4. Wrap it            jaspring.hooks.register(\"chart\", ...)\n5. Feed it            [attr.data-jsp-hook-params]=\"data | json\"\n6. Listen             ctx.pushEvent → (event)=\"handler()\"\n7. Ask it             Browser.current().call(\"chart.method\")",
         "language": "text",
         "filename": "Steps",
         "note": ""
@@ -692,7 +832,7 @@
           "A WebJar puts the library on the classpath, and Spring Boot serves it under /webjars/. Gradle manages the version, and the page does not depend on a CDN at run time. Add webjars-locator-lite to use URLs without the version number.",
           "A CDN link or a copied file under src/main/resources/static works too. Pick one and keep the layout as the single place that loads browser libraries."
         ],
-        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.webjars.npm:chart.js:4.6.1'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.webjars.npm:chart.js:4.6.1'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
@@ -701,32 +841,45 @@
         "id": "load-it",
         "title": "Load it in the layout",
         "paragraphs": [
-          "Load the library with defer and the hook script with type=\"module\". Deferred and module scripts run in document order after the page is parsed, so the library is ready when the hook registers, and the Jaspring runtime exists."
+          "Load the library with defer. The hook script needs no tag: Jaspring adds a module script for src/main/typescript/chart-hook.ts at the end of the body. Deferred and module scripts run in document order after the page is parsed, so Chart exists when the hook registers, and so does the Jaspring runtime."
         ],
-        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>Sales</title>\n  <script src=\"/webjars/chart.js/dist/chart.umd.min.js\" defer></script>\n  <script type=\"module\" src=\"/chart-hook.js\"></script>\n</head>\n<body>\n  <app-root></app-root>\n</body>",
+        "code": "<head>\n  <meta charset=\"utf-8\">\n  <title>Sales</title>\n  <script src=\"/webjars/chart.js/dist/chart.umd.min.js\" defer></script>\n</head>\n<body>\n  <app-root></app-root>\n</body>",
         "language": "html",
         "filename": "src/main/resources/jaspring/index.html",
+        "note": ""
+      },
+      {
+        "id": "type-it",
+        "title": "Type the library",
+        "paragraphs": [
+          "The compiler does not read npm packages, so the library's own typings are not available. Declare the parts you use in a .d.ts file under src/main/typescript. It adds global types and emits nothing.",
+          "Keep it small and grow it with your code. A wrong declaration is not checked against the library, so copy signatures from its documentation."
+        ],
+        "code": "// The parts of Chart.js this application uses. The UMD build defines a global Chart.\ninterface ChartData {\n  labels: string[];\n  datasets: { label: string; data: number[] }[];\n}\n\ninterface ChartOptions {\n  maintainAspectRatio?: boolean;\n  onClick?: (event: unknown, elements: { index: number }[]) => void;\n}\n\ndeclare class Chart {\n  constructor(\n    canvas: HTMLCanvasElement,\n    config: { type: \"bar\" | \"line\"; data: ChartData; options?: ChartOptions },\n  );\n  data: ChartData;\n  update(): void;\n  destroy(): void;\n}",
+        "language": "typescript",
+        "filename": "src/main/typescript/chart.d.ts",
         "note": ""
       },
       {
         "id": "wrap-it",
         "title": "Wrap it in a hook",
         "paragraphs": [
-          "Create the widget in mounted and keep it in a WeakMap keyed by the element. Feed new data in updated. Release it in destroyed. Extra methods, such as total here, answer browser calls.",
-          "updated also runs when a patch of the enclosing view resets attributes that Chart.js added to the canvas. Calling resize() before update() puts them back."
+          "Create the widget in mounted and keep it in a WeakMap keyed by the element. Feed new data in updated. Release it in destroyed. Extra methods, such as total here, answer browser calls. The type parameters give el and ctx.params their types, so a wrong field name fails the build.",
+          "The canvas carries data-jsp-ignore, so patches keep the attributes and styles that Chart.js sets on it. updated only has to pass the new data."
         ],
-        "code": "const charts = new WeakMap();\n\njaspring.hooks.register('chart', {\n  mounted(el, ctx) {\n    charts.set(el, new Chart(el, {\n      type: 'bar',\n      data: {\n        labels: ctx.params.labels,\n        datasets: [{ label: 'Sales', data: ctx.params.values }]\n      },\n      options: {\n        maintainAspectRatio: false,\n        onClick: (_, bars) => bars.length && ctx.pushEvent('bar-picked', { index: bars[0].index })\n      }\n    }));\n  },\n  updated(el, ctx) {\n    const chart = charts.get(el);\n    chart.data.labels = ctx.params.labels;\n    chart.data.datasets[0].data = ctx.params.values;\n    chart.resize();\n    chart.update();\n  },\n  destroyed(el) {\n    charts.get(el)?.destroy();\n    charts.delete(el);\n  },\n  total(el) {\n    return charts.get(el).data.datasets[0].data.reduce((sum, value) => sum + value, 0);\n  }\n});",
-        "language": "javascript",
-        "filename": "src/main/resources/static/chart-hook.js",
+        "code": "interface Series {\n  labels: string[];\n  values: number[];\n}\n\nconst charts = new WeakMap<HTMLCanvasElement, Chart>();\n\njaspring.hooks.register<HTMLCanvasElement, Series>(\"chart\", {\n  mounted(el, ctx) {\n    const chart = new Chart(el, {\n      type: \"bar\",\n      data: {\n        labels: ctx.params.labels,\n        datasets: [{ label: \"Sales\", data: ctx.params.values }],\n      },\n      options: {\n        maintainAspectRatio: false,\n        onClick: (_, bars) => {\n          if (bars.length) ctx.pushEvent(\"bar-picked\", { index: bars[0].index });\n        },\n      },\n    });\n    charts.set(el, chart);\n  },\n  updated(el, ctx) {\n    const chart = charts.get(el);\n    if (!chart) return;\n    chart.data.labels = ctx.params.labels;\n    chart.data.datasets[0].data = ctx.params.values;\n    chart.update();\n  },\n  destroyed(el) {\n    charts.get(el)?.destroy();\n    charts.delete(el);\n  },\n  total(el) {\n    const values = charts.get(el)?.data.datasets[0].data ?? [];\n    return values.reduce((sum, value) => sum + value, 0);\n  },\n});",
+        "language": "typescript",
+        "filename": "src/main/typescript/chart-hook.ts",
         "note": ""
       },
       {
         "id": "bind-it",
         "title": "Bind it in a component",
         "paragraphs": [
-          "Send a record through the json pipe. The chart sits in its own component, inside a sized wrapper, so the library can measure it and unrelated patches rarely reach it."
+          "Send a record through the json pipe. data-jsp-ignore keeps the canvas as Chart.js left it and lets patches update only its data-* attributes, so new params still reach updated. The stable id lets the morph match the canvas to the same node every time.",
+          "The chart sits in its own component, inside a sized wrapper, so the library can measure it and unrelated patches rarely reach it."
         ],
-        "code": "<div class=\"chart-box\">\n  <canvas data-jsp-hook=\"chart\"\n          [attr.data-jsp-hook-params]=\"series() | json\"\n          (bar-picked)=\"pick($event.detail.index)\"></canvas>\n</div>\n<p>{{ selected() }}</p>\n<button (click)=\"showTotal()\">Total</button>",
+        "code": "<div class=\"chart-box\">\n  <canvas id=\"sales-chart\"\n          data-jsp-hook=\"chart\"\n          data-jsp-ignore\n          [attr.data-jsp-hook-params]=\"series() | json\"\n          (bar-picked)=\"pick($event.detail.index)\"></canvas>\n</div>\n<p>{{ selected() }}</p>\n<button (click)=\"showTotal()\">Total</button>",
         "language": "html",
         "filename": "sales-chart.component.html",
         "note": ""
@@ -746,13 +899,13 @@
         "id": "checklist",
         "title": "Checklist for any library",
         "paragraphs": [
-          "Load the library before the hook script, with defer or as a module. Keep one widget per element in a WeakMap. Expect a patch to reset DOM the library changed, and restore it in updated. Clean up timers, listeners, and widget instances in destroyed.",
-          "Send data in, not markup. Return small JSON values from hook methods. Libraries that replace or move the hooked element itself do not fit this model; give them a child element they own."
+          "Load the library with defer in the layout, because compiled hook scripts are modules added at the end of the body. Declare its API in a local .d.ts. Keep one widget per element in a WeakMap. Put data-jsp-ignore and a stable id on the element the library owns. Clean up timers, listeners, and widget instances in destroyed.",
+          "Send data in, not markup. Hook method results may be up to 4 MiB characters over the WebSocket; send files and images to an ordinary endpoint. Libraries that replace or move the hooked element itself do not fit this model; give them a child element they own."
         ],
         "code": "",
         "language": "",
         "filename": "",
-        "note": "Verified with Jaspring 0.3.0, Chart.js 4.6.1 from a WebJar, and headless Chromium: the chart survives patches of its parent view, data changes reach updated, bar clicks reach Java, and small hook results return through calls."
+        "note": "Verified with Jaspring 0.4.0, Chart.js 4.6.1 from a WebJar, and headless Chromium: the chart keeps its size through patches of its parent view, data changes reach updated, bar clicks reach Java, and hook results return through calls."
       }
     ]
   },
@@ -915,7 +1068,7 @@
           "Oracle GraalVM 25.2.x, because Web Image is part of Oracle GraalVM and not GraalVM Community. Binaryen's wasm-as 119 or later on the PATH. On Fedora use dnf install binaryen; on macOS use brew install binaryen. Ubuntu 24.04 packages an older version, so use a Binaryen release.",
           "Apply the Jaspring Gradle plugin with the same version as the starter. The plugin adds the matching jaspring-browser-runtime to the jaspringBrowser configuration."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.3.0'\n}",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// build.gradle\nplugins {\n    id 'java'\n    id 'org.springframework.boot' version '4.1.2'\n    id 'io.spring.dependency-management' version '1.1.7'\n    id 'dev.isira.jaspring' version '0.4.0'\n}",
         "language": "gradle",
         "filename": "Gradle setup",
         "note": ""
@@ -924,7 +1077,7 @@
         "id": "tasks",
         "title": "The build tasks",
         "paragraphs": [
-          "The plugin wires three tasks into the build when the java plugin is applied. Projects without closures skip the last two, so applying the plugin costs nothing until you write one."
+          "The plugin wires three tasks into the build when the java plugin is applied. Projects without closures skip the last two, so applying the plugin costs nothing until you write one. The same plugin also compiles TypeScript; those tasks are covered in TypeScript."
         ],
         "code": "scanBrowserClosures       find BrowserTask lambdas in the compiled classes\ncompileBrowserDispatcher  compile the generated entry point against jaspring-browser-runtime\nbuildBrowserImage         native-image --tool:svm-wasm → jaspring-app.js, jaspring-app.js.wasm,\n                          jaspring/jaspring-browser.json in the application's resources",
         "language": "text",
@@ -1034,9 +1187,9 @@
         "id": "gradle-plugin",
         "title": "Apply the Gradle plugin",
         "paragraphs": [
-          "The Jaspring plugin provides build tooling: component scaffolding and the WebAssembly build of Java browser closures. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the same version as the starter."
+          "The Jaspring plugin provides build tooling: component scaffolding, the TypeScript build of browser scripts, and the WebAssembly build of Java browser closures. Keep the starter dependency for the runtime. Add Maven Central to plugin repositories, then apply the same version as the starter."
         ],
-        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.3.0'",
+        "code": "// settings.gradle\npluginManagement {\n    repositories {\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\n// In the existing build.gradle plugins block:\nid 'dev.isira.jaspring' version '0.4.0'",
         "language": "gradle",
         "filename": "Plugin configuration",
         "note": ""
@@ -1063,6 +1216,18 @@
         "language": "shell",
         "filename": "Terminal",
         "note": ""
+      },
+      {
+        "id": "typescript-tasks",
+        "title": "Compile TypeScript",
+        "paragraphs": [
+          "With the java plugin applied, the plugin adds two tasks that run before processResources. extractTypescriptTypes writes jaspring.d.ts and tsconfig.base.json to build/jaspring/typescript/types/ for the editor. compileTypescript type-checks src/main/typescript and ships the compiled jaspring/ts/**/*.js files and the jaspring/jaspring-typescript.json manifest with the application's resources. Projects without src/main/typescript skip both.",
+          "The compiler is dev.isira:jaspring-typescript on the jaspringTypescript configuration. The plugin adds its own version by default. The typescript block is optional; these are the defaults. Each setting also has a Gradle property: jaspring.typescript.typeCheck, jaspring.typescript.host, jaspring.typescript.nodePath, and jaspring.typescript.skip."
+        ],
+        "code": "jaspring {\n    typescript {\n        sourceDir = layout.projectDirectory.dir('src/main/typescript')\n        typeCheck = true\n        host = dev.isira.jaspring.gradle.JaspringExtension.Typescript.Host.GRAALJS\n        skip = false\n    }\n}",
+        "language": "gradle",
+        "filename": "build.gradle",
+        "note": "The TypeScript page covers the compiler hosts, the editor setup, and the startup fallback."
       },
       {
         "id": "intellij",
@@ -1124,8 +1289,8 @@
         "id": "modules",
         "title": "The framework modules",
         "paragraphs": [
-          "jaspring-core owns the component, template, signal, zone, and live-page machinery. jaspring-spring-boot-starter adds auto-configuration, MVC views, layouts, live transports, and browser assets.",
-          "jaspring-gradle-plugin provides component scaffolding and browser-closure builds. jaspring-browser-runtime is the BrowserClient facade compiled into WebAssembly. jaspring-sample shows the pieces working together."
+          "jaspring-core owns the component, template, signal, zone, and live-page machinery. jaspring-spring-boot-starter adds auto-configuration, MVC views, layouts, live transports, browser assets, and serving of compiled TypeScript.",
+          "jaspring-gradle-plugin provides component scaffolding, the TypeScript build, and browser-closure builds. jaspring-typescript is the TypeScript 6 compiler hosted in GraalJS or Node, used by the plugin and by the starter's startup fallback. jaspring-browser-runtime is the BrowserClient facade compiled into WebAssembly. jaspring-sample shows the pieces working together."
         ],
         "code": "",
         "language": "",
@@ -1177,6 +1342,17 @@
         "note": ""
       },
       {
+        "id": "typescript-fallback",
+        "title": "TypeScript at startup",
+        "paragraphs": [
+          "With dev.isira:jaspring-typescript on the runtime classpath, the starter checks src/main/typescript at startup and compiles it when the build's manifest is missing or stale, for example after an IDE run that skipped Gradle. These are the defaults. A packaged application has no sources, so nothing runs there."
+        ],
+        "code": "jaspring:\n  typescript:\n    enabled: true\n    type-check: true\n    source-dir: src/main/typescript\n    host: graaljs",
+        "language": "yaml",
+        "filename": "application.yaml · defaults",
+        "note": ""
+      },
+      {
         "id": "tailwind-setting",
         "title": "Opt into Tailwind",
         "paragraphs": [
@@ -1200,7 +1376,7 @@
         "id": "current-status",
         "title": "Experimental, and usable for exploration",
         "paragraphs": [
-          "The published Jaspring 0.3.0 starter implements server-rendered components, live browser events, signals, zone and zoneless change detection, client hooks, browser calls, and Java-to-WebAssembly browser closures. Static generation and incremental regeneration remain future work.",
+          "The published Jaspring 0.4.0 starter implements server-rendered components, live browser events, signals, zone and zoneless change detection, client hooks, browser calls, Java-to-WebAssembly browser closures, and browser scripts in TypeScript. Static generation and incremental regeneration remain future work.",
           "A live page keeps its component tree and state on the server between events. Interaction depends on a working connection. Evaluate that architecture and the experimental API against your application’s needs."
         ],
         "code": "",
@@ -1243,7 +1419,7 @@
         "code": "",
         "language": "",
         "filename": "",
-        "note": "Keep the Gradle plugin, starter, and core on the same version. The plugin adds the matching jaspring-browser-runtime to the WebAssembly build."
+        "note": "Keep the Gradle plugin, starter, and core on the same version. The plugin adds the matching jaspring-browser-runtime and jaspring-typescript to its builds."
       }
     ]
   },
@@ -1272,7 +1448,7 @@
         "paragraphs": [
           "Add the Font Awesome WebJar. Add webjars-locator-lite as well if you want URLs without the version number, so an upgrade only touches build.gradle."
         ],
-        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'\n    implementation 'org.webjars:font-awesome:7.3.0'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
+        "code": "dependencies {\n    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'\n    implementation 'org.webjars:font-awesome:7.3.0'\n    implementation 'org.webjars:webjars-locator-lite:1.1.5'\n}",
         "language": "gradle",
         "filename": "build.gradle",
         "note": ""
@@ -1331,7 +1507,7 @@
         "code": "<!-- CDN -->\n<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css\">\n\n<!-- Copied into src/main/resources/static/fontawesome/ -->\n<link rel=\"stylesheet\" href=\"/fontawesome/css/all.min.css\">",
         "language": "html",
         "filename": "Alternatives",
-        "note": "Verified with Jaspring 0.3.0, Font Awesome 7.3.0 from a WebJar, and webjars-locator-lite 1.1.5: icons render on first paint and after live patches."
+        "note": "Verified with Jaspring 0.4.0, Font Awesome 7.3.0 from a WebJar, and webjars-locator-lite 1.1.5: icons render on first paint and after live patches."
       }
     ]
   }

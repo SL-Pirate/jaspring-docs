@@ -86,11 +86,26 @@ class JaspringDocsApplicationTests {
     }
 
     @Test
+    void compiledSiteScriptIsInjectedAndServed() throws Exception {
+        try (final var client = HttpClient.newHttpClient()) {
+            final var src = extract("<script type=\"module\" src=\"(/_jaspring/ts/site\\.js\\?v=[0-9a-f]{8})\"></script>",
+                    get(client, "/docs/introduction").body());
+            final var script = get(client, src);
+            assertEquals(200, script.statusCode());
+            assertTrue(script.body().contains("new MutationObserver(syncBrowserDetails)"), script.body());
+        }
+    }
+
+    @Test
     void searchFindsApisAndRequiresAllSearchTerms() {
         assertTrue(documentation.search("SignalWriteOutsideTurnException").stream()
                 .anyMatch(page -> page.slug().equals("signals")));
         assertTrue(documentation.search("  WEBSOCKET fallback ").stream()
                 .anyMatch(page -> page.slug().equals("events")));
+        assertTrue(documentation.search("data-jsp-ignore").stream()
+                .anyMatch(page -> page.slug().equals("client-hooks")));
+        assertTrue(documentation.search("compileTypescript").stream()
+                .anyMatch(page -> page.slug().equals("typescript")));
         assertTrue(documentation.search("no-such-jaspring-api").isEmpty());
         assertEquals(documentation.pages(), documentation.search(" "));
     }

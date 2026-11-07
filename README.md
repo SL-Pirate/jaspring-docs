@@ -1,7 +1,7 @@
 # Jaspring · Documentation & website
 
 The landing page and documentation for Jaspring, the reactive meta-framework for Java.
-Built with Jaspring itself: Java components, Angular templates, Spring Boot, and server-side signals.
+Built with Jaspring itself: Java components, Angular templates, Spring Boot, server-side signals, and a TypeScript browser script.
 
 ## Run locally
 
@@ -19,7 +19,8 @@ Override the port when needed:
 ./gradlew bootRun --args='--server.port=9000'
 ```
 
-No Node.js installation or frontend build is needed to run or package the application.
+No Node.js installation is needed to run or package the application. The Jaspring Gradle plugin type-checks and compiles
+the browser script with its bundled TypeScript compiler.
 
 ## Validate and package
 
@@ -66,12 +67,14 @@ requests. Live page state belongs to one application process; use session affini
 
 ## Content and components
 
-- `src/main/resources/docs/catalog.json` is the ordered source for all 21 documentation pages, their sections, code examples, navigation, and search.
+- `src/main/resources/docs/catalog.json` is the ordered source for all 22 documentation pages, their sections, code examples, navigation, and search.
 - `src/main/java/dev/isira/jaspring/docs/components` contains the page, header/search, landing page, and documentation components.
 - `src/main/resources/dev/isira/jaspring/docs/components` contains their Angular HTML templates.
 - `src/main/resources/jaspring/index.html` is the document layout. The controller inserts escaped page titles and descriptions before sending the rendered document.
 - `src/main/resources/static/site.css` contains the responsive visual system and orbital illustration.
-- `src/main/resources/static/site.js` handles syntax coloring, clipboard access, keyboard shortcuts, modal focus, and table-of-contents highlighting. Application state stays in Java.
+- `src/main/typescript/site.ts` handles syntax coloring, clipboard access, keyboard shortcuts, modal focus, and table-of-contents highlighting. Application state stays in Java.
+  Jaspring adds its compiled module to every page, so the layout does not link it. The root `tsconfig.json` gives editors the build's
+  compiler options and the `jaspring` typings; run any build once so `build/jaspring/typescript/types/` exists.
 
 To add a documentation page, add an entry to the catalog using an existing group: `Start here`, `Core concepts`, `Browser`, `Go further`, or `Cookbook`.
 The groups are listed in `DocsComponent`; keep catalog order matching that list, because previous/next links follow catalog order.
@@ -79,9 +82,11 @@ Use a unique slug and unique section IDs within each page. Navigation, search, p
 
 ## Framework versions
 
-The site runs on the published **Jaspring 0.3.0** starter, and the documentation describes that release,
-including client hooks, browser calls, and Java-to-WebAssembly browser closures. The site itself uses no
-browser closures, so it does not apply the Jaspring Gradle plugin or need the WebAssembly toolchain.
+The site runs on the published **Jaspring 0.4.0** starter and Gradle plugin, and the documentation describes that release,
+including TypeScript browser scripts, client hooks, browser calls, and Java-to-WebAssembly browser closures.
+The plugin compiles `src/main/typescript`. The site has no browser closures, so the plugin skips the WebAssembly build
+and the toolchain is not needed. `jaspring-typescript` is a `developmentOnly` dependency: `bootRun` recompiles the
+script at startup when an IDE run skipped Gradle. It is not part of the packaged JAR.
 
 Framework repository: [SL-Pirate/jaspring](https://github.com/SL-Pirate/jaspring).
 Source and license links use its `master` branch.

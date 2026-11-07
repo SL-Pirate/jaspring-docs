@@ -1,8 +1,41 @@
 // Application state lives in Jaspring. This module handles browser-only details.
-const highlights = new WeakMap();
+interface Highlight {
+  source: string;
+  language: string;
+  html: string;
+}
 
-function highlight(el) {
-  const source = el.textContent;
+interface DialogState {
+  el: HTMLElement;
+  previousFocus: Element | null;
+  background: HTMLElement[];
+  previousInert: boolean[];
+  previousOverflow: string;
+  trapFocus: (event: KeyboardEvent) => void;
+}
+
+const highlights = new WeakMap<HTMLElement, Highlight>();
+
+const keywords =
+  "public|private|protected|class|record|interface|final|var|new|return|void|import|package|static|implements|extends|if|else|true|false|null|const|let|function|implementation|repositories|dependencies|mavenCentral|plugins|id|version";
+// Kept apart so words like `type` and `of` stay plain in Java and Gradle samples.
+const scriptKeywords = `${keywords}|export|from|type|declare|async|await|readonly|undefined|of`;
+
+function codePattern(language: string): RegExp {
+  if (language === "html")
+    return /(?<comment><!--[\s\S]*?-->)|(?<tag><[!\w/][^>]*>)|(?<keyword>@(?:if|else|for|empty|switch|case|let|defer)\b)/g;
+  const words =
+    language === "typescript" || language === "javascript"
+      ? scriptKeywords
+      : keywords;
+  return new RegExp(
+    String.raw`(?<comment>\/\/[^\n]*|\/\*[\s\S]*?\*\/|^\s*#[^\n]*)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<annotation>@\w+)|(?<keyword>\b(?:${words})\b)|(?<number>\b\d+(?:\.\d+)*\b)`,
+    "gm",
+  );
+}
+
+function highlight(el: HTMLElement): void {
+  const source = el.textContent ?? "";
   const language = el.dataset.language;
   if (!language || language === "text") return;
   const cached = highlights.get(el);
@@ -13,16 +46,13 @@ function highlight(el) {
   )
     return;
 
-  const pattern =
-    language === "html"
-      ? /(?<comment><!--[\s\S]*?-->)|(?<tag><[!\w/][^>]*>)|(?<keyword>@(?:if|else|for|empty|switch|case|let|defer)\b)/g
-      : /(?<comment>\/\/[^\n]*|\/\*[\s\S]*?\*\/|^\s*#[^\n]*)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<annotation>@\w+)|(?<keyword>\b(?:public|private|protected|class|record|interface|final|var|new|return|void|import|package|static|implements|extends|if|else|true|false|null|const|let|function|implementation|repositories|dependencies|mavenCentral|plugins|id|version)\b)|(?<number>\b\d+(?:\.\d+)*\b)/gm;
   const fragment = document.createDocumentFragment();
   let offset = 0;
-  for (const match of source.matchAll(pattern)) {
+  for (const match of source.matchAll(codePattern(language))) {
+    const groups = match.groups ?? {};
     fragment.append(document.createTextNode(source.slice(offset, match.index)));
     const token = document.createElement("span");
-    token.className = `token-${Object.keys(match.groups).find((key) => match.groups[key] !== undefined)}`;
+    token.className = `token-${Object.keys(groups).find((key) => groups[key] !== undefined)}`;
     token.textContent = match[0];
     fragment.append(token);
     offset = match.index + match[0].length;
@@ -32,22 +62,24 @@ function highlight(el) {
   highlights.set(el, { source, language, html: el.innerHTML });
 }
 
-let dialogState;
+let dialogState: DialogState | undefined;
 
-function mountDialog(el) {
+function mountDialog(el: HTMLElement): void {
   const previousFocus = document.activeElement;
   const background = [
-    ...document.querySelectorAll(
+    ...document.querySelectorAll<HTMLElement>(
       ".site-header, site-landing, site-docs, .site-footer, .skip-link",
     ),
   ];
   const previousInert = background.map((node) => node.inert);
   const previousOverflow = document.body.style.overflow;
-  const trapFocus = (event) => {
+  const trapFocus = (event: KeyboardEvent) => {
     if (event.key !== "Tab") return;
-    const controls = [...el.querySelectorAll("a[href], button, input")].filter(
-      (node) => !node.disabled,
-    );
+    const controls = [
+      ...el.querySelectorAll<HTMLAnchorElement | HTMLButtonElement | HTMLInputElement>(
+        "a[href], button, input",
+      ),
+    ].filter((node) => !("disabled" in node && node.disabled));
     const first = controls[0];
     const last = controls.at(-1);
     if (event.shiftKey && document.activeElement === first) {
@@ -71,15 +103,17 @@ function mountDialog(el) {
   requestAnimationFrame(() => el.querySelector("input")?.focus());
 }
 
-function syncBrowserDetails() {
-  document.querySelectorAll("code[data-language]").forEach(highlight);
+function syncBrowserDetails(): void {
+  document
+    .querySelectorAll<HTMLElement>("code[data-language]")
+    .forEach(highlight);
   const shortcut = document.querySelector(".search-trigger kbd");
   const shortcutText = /Mac|iPhone|iPad/.test(navigator.platform)
     ? "⌘ K"
     : "Ctrl K";
   if (shortcut && shortcut.textContent !== shortcutText)
     shortcut.textContent = shortcutText;
-  const dialog = document.querySelector(".search-dialog");
+  const dialog = document.querySelector<HTMLElement>(".search-dialog");
   if (dialogState && dialogState.el !== dialog) {
     const state = dialogState;
     state.background.forEach((node, index) => {
@@ -87,7 +121,8 @@ function syncBrowserDetails() {
     });
     document.body.style.overflow = state.previousOverflow;
     state.el.removeEventListener("keydown", state.trapFocus);
-    if (state.previousFocus?.isConnected) state.previousFocus.focus();
+    if (state.previousFocus instanceof HTMLElement && state.previousFocus.isConnected)
+      state.previousFocus.focus();
     dialogState = undefined;
   }
   if (dialog && !dialogState) mountDialog(dialog);
@@ -110,7 +145,7 @@ document.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
     if (document.querySelector(".search-dialog"))
-      document.querySelector("#docs-query")?.focus();
+      document.querySelector<HTMLInputElement>("#docs-query")?.focus();
     else
       document
         .querySelector(".site-header")
@@ -119,12 +154,14 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-copy]");
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLElement>("[data-copy]");
   if (!button || button.dataset.copying) return;
-  const source = button
+  const code = button
     .closest(".doc-code-block, .install-card")
-    ?.querySelector("code")?.textContent;
-  if (!source) return;
+    ?.querySelector("code");
+  const source = code?.textContent;
+  if (!code || !source) return;
   const originalLabel = button.textContent;
   button.dataset.copying = "true";
   try {
@@ -133,12 +170,10 @@ document.addEventListener("click", async (event) => {
   } catch {
     button.textContent = "Select to copy";
     const range = document.createRange();
-    range.selectNodeContents(
-      button.closest(".doc-code-block, .install-card").querySelector("code"),
-    );
+    range.selectNodeContents(code);
     const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }
   setTimeout(() => {
     button.textContent = originalLabel;
@@ -147,11 +182,14 @@ document.addEventListener("click", async (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  const tab = event.target.closest('[role="tab"]');
+  if (!(event.target instanceof Element)) return;
+  const tab = event.target.closest<HTMLElement>('[role="tab"]');
   if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
     return;
   const tabs = [
-    ...tab.closest('[role="tablist"]').querySelectorAll('[role="tab"]'),
+    ...(tab
+      .closest('[role="tablist"]')
+      ?.querySelectorAll<HTMLElement>('[role="tab"]') ?? []),
   ];
   const direction = event.key === "ArrowLeft" ? -1 : 1;
   const index =
@@ -165,7 +203,9 @@ document.addEventListener("keydown", (event) => {
   tabs[index].click();
 });
 
-const tocLinks = [...document.querySelectorAll(".doc-toc nav a")];
+const tocLinks = [
+  ...document.querySelectorAll<HTMLAnchorElement>(".doc-toc nav a"),
+];
 if (tocLinks.length && "IntersectionObserver" in window) {
   const observer = new IntersectionObserver(
     (entries) => {

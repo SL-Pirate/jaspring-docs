@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.2'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'dev.isira.jaspring' version '0.4.0'
 }
 
 group = 'dev.isira.jaspring'
@@ -19,8 +20,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'dev.isira:jaspring-spring-boot-starter:0.3.0'
+    implementation 'dev.isira:jaspring-spring-boot-starter:0.4.0'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    // Lets bootRun recompile src/main/typescript when an IDE run skipped Gradle; not packaged.
+    developmentOnly 'dev.isira:jaspring-typescript:0.4.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
